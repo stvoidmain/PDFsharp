@@ -1,0 +1,12 @@
+*.ide
+*.user
+_ReSharper.*
+bin/
+obj/
+packages/
+Logs/
+ul/
+*.suo
+*.user
+*.user
+Javascript/res/Javascript.js
