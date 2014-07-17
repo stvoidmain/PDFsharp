@@ -265,7 +265,7 @@ namespace PdfSharp.Drawing
       set
       {
         this.value = value;
-        this.type = XGraphicsUnit.Point;
+        this.type = XGraphicsUnit.Presentation;
       }
     }
 
