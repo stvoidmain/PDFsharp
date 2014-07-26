@@ -38,210 +38,247 @@ using MigraDoc.DocumentObjectModel.Internals;
 
 namespace MigraDoc.DocumentObjectModel.Shapes
 {
-  /// <summary>
-  /// Represents an image in the document or paragraph.
-  /// </summary>
-  public class Image : Shape
-  {
     /// <summary>
-    /// Initializes a new instance of the Image class.
+    /// Represents an image in the document or paragraph.
     /// </summary>
-    public Image()
+    public class Image : Shape
     {
-    }
-
-    /// <summary>
-    /// Initializes a new instance of the Image class with the specified parent.
-    /// </summary>
-    internal Image(DocumentObject parent) : base(parent) { }
-
-    /// <summary>
-    /// Initializes a new instance of the Image class from the specified (file) name.
-    /// </summary>
-    public Image(string name)
-      : this()
-    {
-      Name = name;
-    }
-
-    //#region Methods
-    /// <summary>
-    /// Creates a deep copy of this object.
-    /// </summary>
-    public new Image Clone()
-    {
-      return (Image)DeepCopy();
-    }
-
-    /// <summary>
-    /// Implements the deep copy of the object.
-    /// </summary>
-    protected override object DeepCopy()
-    {
-      Image image = (Image)base.DeepCopy();
-      if (image.pictureFormat != null)
-      {
-        image.pictureFormat = image.pictureFormat.Clone();
-        image.pictureFormat.parent = image;
-      }
-      return image;
-    }
-    //#endregion
-
-    //#region Properties
-    /// <summary>
-    /// Gets or sets the name of the image.
-    /// </summary>
-    public string Name
-    {
-      get { return this.name.Value; }
-      set { this.name.Value = value; }
-    }
-    [DV]
-    internal NString name = NString.NullValue;
-
-    /// <summary>
-    /// Gets or sets the ScaleWidth of the image.
-    /// If the Width is set to, the resulting image width is ScaleWidth * Width.
-    /// </summary>
-    public double ScaleWidth
-    {
-      get { return this.scaleWidth.Value; }
-      set { this.scaleWidth.Value = value; }
-    }
-    [DV]
-    internal NDouble scaleWidth = NDouble.NullValue;
-
-    /// <summary>
-    /// Gets or sets the ScaleHeight of the image.
-    /// If the Height is set too, the resulting image height is ScaleHeight * Height.
-    /// </summary>
-    public double ScaleHeight
-    {
-      get { return this.scaleHeight.Value; }
-      set { this.scaleHeight.Value = value; }
-    }
-    [DV]
-    internal NDouble scaleHeight = NDouble.NullValue;
-
-    /// <summary>
-    /// Gets or sets whether the AspectRatio of the image is kept unchanged.
-    /// If both Width and Height are set, this property is ignored.
-    /// </summary>
-    public bool LockAspectRatio
-    {
-      get { return this.lockAspectRatio.Value; }
-      set { this.lockAspectRatio.Value = value; }
-    }
-    [DV]
-    internal NBool lockAspectRatio = NBool.NullValue;
-
-    /// <summary>
-    /// Gets or sets the PictureFormat for the image
-    /// </summary>
-    public PictureFormat PictureFormat
-    {
-      get
-      {
-        if (this.pictureFormat == null)
-          this.pictureFormat = new PictureFormat(this);
-        return this.pictureFormat;
-      }
-      set
-      {
-        SetParent(value);
-        this.pictureFormat = value;
-      }
-    }
-    [DV]
-    internal PictureFormat pictureFormat;
-
-    /// <summary>
-    /// Gets or sets a user defined resolution for the image in dots per inch.
-    /// </summary>
-    public double Resolution
-    {
-      get { return this.resolution.Value; }
-      set { this.resolution.Value = value; }
-    }
-    [DV]
-    internal NDouble resolution = NDouble.NullValue;
-    //#endregion
-
-    #region Internal
-    /// <summary>
-    /// Converts Image into DDL.
-    /// </summary>
-    internal override void Serialize(Serializer serializer)
-    {
-      serializer.WriteLine("\\image(\"" + this.name.Value.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\")");
-
-      int pos = serializer.BeginAttributes();
-
-      base.Serialize(serializer);
-      if (!this.scaleWidth.IsNull)
-        serializer.WriteSimpleAttribute("ScaleWidth", this.ScaleWidth);
-      if (!this.scaleHeight.IsNull)
-        serializer.WriteSimpleAttribute("ScaleHeight", this.ScaleHeight);
-      if (!this.lockAspectRatio.IsNull)
-        serializer.WriteSimpleAttribute("LockAspectRatio", this.LockAspectRatio);
-      if (!this.resolution.IsNull)
-        serializer.WriteSimpleAttribute("Resolution", this.Resolution);
-      if (!this.IsNull("PictureFormat"))
-        this.pictureFormat.Serialize(serializer);
-
-      serializer.EndAttributes(pos);
-    }
-
-    /// <summary>
-    /// Gets the concrete image path, taking into account the DOM document's DdlFile and
-    /// ImagePath properties as well as the given working directory (which can be null).
-    /// </summary>
-    public string GetFilePath(string workingDir)
-    {
-      string filePath = "";
-
-      try
-      {
-        if (!String.IsNullOrEmpty(workingDir))
-          filePath = workingDir;
-        else
-          filePath = Directory.GetCurrentDirectory() + "\\";
-
-        if (!Document.IsNull("ImagePath"))
+        /// <summary>
+        /// Initializes a new instance of the Image class.
+        /// </summary>
+        public Image()
         {
-          string foundfile = ImageHelper.GetImageName(filePath, this.Name, Document.ImagePath);
-          if (foundfile != null)
-            filePath = foundfile;
-          else
-            filePath = Path.Combine(filePath, Name);
         }
-        else
-          filePath = Path.Combine(filePath, Name);
-      }
-      catch (Exception ex)
-      {
-        Debug.Assert(false, "Should never occur with properly formatted Wiki texts. " + ex);
-        return null;
-        //throw;
-      }
 
-      return filePath;
-    }
+        /// <summary>
+        /// Initializes a new instance of the Image class with the specified parent.
+        /// </summary>
+        internal Image( DocumentObject parent ) : base( parent ) { }
 
-    /// <summary>
-    /// Returns the meta object of this instance.
-    /// </summary>
-    internal override Meta Meta
-    {
-      get
-      {
-        if (meta == null)
-          meta = new Meta(typeof(Image));
-        return meta;
-      }
+        /// <summary>
+        /// Initializes a new instance of the Image class from the specified (file) name.
+        /// </summary>
+        public Image( string name )
+          : this()
+        {
+            Name = name;
+        }
+
+        //#region Methods
+        /// <summary>
+        /// Creates a deep copy of this object.
+        /// </summary>
+        public new Image Clone()
+        {
+            return ( Image ) DeepCopy();
+        }
+
+        /// <summary>
+        /// Implements the deep copy of the object.
+        /// </summary>
+        protected override object DeepCopy()
+        {
+            Image image = ( Image ) base.DeepCopy();
+            if ( image.pictureFormat != null )
+            {
+                image.pictureFormat = image.pictureFormat.Clone();
+                image.pictureFormat.parent = image;
+            }
+            return image;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the Image class from the supplied MemoryStream
+        /// </summary>
+        public Image( MemoryStream imageStream )
+        : this()
+        {
+            ImageStream = imageStream;
+            Name = String.Empty;
+        }
+        //#endregion
+
+        //#region Properties
+        /// <summary>
+        /// Gets or sets the value for an image in memory.
+        /// </summary>
+        public MemoryStream ImageStream
+        {
+            get { return this.imageStream; }
+            set
+            {
+                this.imageStream = value;
+                StreamBased = value != null;
+            }
+        }
+        internal MemoryStream imageStream = null;
+        /// <summary>
+        /// Gets or sets the name of the image.
+        /// </summary>
+        public string Name
+        {
+            get { return this.name.Value; }
+            set { this.name.Value = value; }
+        }
+        [DV]
+        internal NString name = NString.NullValue;
+
+        /// <summary>
+        /// Gets or sets the ScaleWidth of the image.
+        /// If the Width is set to, the resulting image width is ScaleWidth * Width.
+        /// </summary>
+        public double ScaleWidth
+        {
+            get { return this.scaleWidth.Value; }
+            set { this.scaleWidth.Value = value; }
+        }
+        [DV]
+        internal NDouble scaleWidth = NDouble.NullValue;
+
+        /// <summary>
+        /// Gets or sets the ScaleHeight of the image.
+        /// If the Height is set too, the resulting image height is ScaleHeight * Height.
+        /// </summary>
+        public double ScaleHeight
+        {
+            get { return this.scaleHeight.Value; }
+            set { this.scaleHeight.Value = value; }
+        }
+        [DV]
+        internal NDouble scaleHeight = NDouble.NullValue;
+
+        /// <summary>
+        /// Gets or sets whether the AspectRatio of the image is kept unchanged.
+        /// If both Width and Height are set, this property is ignored.
+        /// </summary>
+        public bool LockAspectRatio
+        {
+            get { return this.lockAspectRatio.Value; }
+            set { this.lockAspectRatio.Value = value; }
+        }
+        [DV]
+        internal NBool lockAspectRatio = NBool.NullValue;
+
+        /// <summary>
+        /// Gets or sets the PictureFormat for the image
+        /// </summary>
+        public PictureFormat PictureFormat
+        {
+            get
+            {
+                if ( this.pictureFormat == null )
+                    this.pictureFormat = new PictureFormat( this );
+                return this.pictureFormat;
+            }
+            set
+            {
+                SetParent( value );
+                this.pictureFormat = value;
+            }
+        }
+        [DV]
+        internal PictureFormat pictureFormat;
+
+        /// <summary>
+        /// Gets or sets a user defined resolution for the image in dots per inch.
+        /// </summary>
+        public double Resolution
+        {
+            get { return this.resolution.Value; }
+            set { this.resolution.Value = value; }
+        }
+        [DV]
+        internal NDouble resolution = NDouble.NullValue;
+
+        /// <summary>
+        /// Gets or sets a flag to identify that this image is stream based.
+        /// </summary>
+        public bool StreamBased
+        {
+            get { return this.streamBased.Value; }
+            set { this.streamBased.Value = value; }
+        }
+        [DV]
+        internal NBool streamBased = NBool.NullValue;
+        //#endregion
+
+        #region Internal
+        /// <summary>
+        /// Converts Image into DDL.
+        /// </summary>
+        internal override void Serialize( Serializer serializer )
+        {
+            serializer.WriteLine( "\\image(\"" + this.name.Value.Replace( "\\", "\\\\" ).Replace( "\"", "\\\"" ) + "\")" );
+
+            int pos = serializer.BeginAttributes();
+
+            base.Serialize( serializer );
+            if ( !this.scaleWidth.IsNull )
+                serializer.WriteSimpleAttribute( "ScaleWidth", this.ScaleWidth );
+            if ( !this.scaleHeight.IsNull )
+                serializer.WriteSimpleAttribute( "ScaleHeight", this.ScaleHeight );
+            if ( !this.lockAspectRatio.IsNull )
+                serializer.WriteSimpleAttribute( "LockAspectRatio", this.LockAspectRatio );
+            if ( !this.resolution.IsNull )
+                serializer.WriteSimpleAttribute( "Resolution", this.Resolution );
+            if ( !this.IsNull( "PictureFormat" ) )
+                this.pictureFormat.Serialize( serializer );
+
+            serializer.EndAttributes( pos );
+        }
+
+        /// <summary>
+        /// Gets the concrete image path, taking into account the DOM document's DdlFile and
+        /// ImagePath properties as well as the given working directory (which can be null).
+        /// </summary>
+        public string GetFilePath( string workingDir )
+        {
+            // no need to return a file path if the image is stream based
+            if ( this.StreamBased )
+                return String.Empty;
+            string filePath = "";
+
+            try
+            {
+                if ( !String.IsNullOrEmpty( workingDir ) )
+                    filePath = workingDir;
+                else
+                    filePath = Directory.GetCurrentDirectory() + "\\";
+
+                if ( !Document.IsNull( "ImagePath" ) )
+                {
+                    string foundfile = ImageHelper.GetImageName( filePath, this.Name, Document.ImagePath );
+                    if ( foundfile != null )
+                        filePath = foundfile;
+                    else
+                        filePath = Path.Combine( filePath, Name );
+                }
+                else
+                    filePath = Path.Combine( filePath, Name );
+            }
+            catch (Exception ex)
+            {
+                Debug.Assert( false, "Should never occur with properly formatted Wiki texts. " + ex );
+                return null;
+                //throw;
+            }
+
+            return filePath;
+        }
+
+        /// <summary>
+        /// Returns the meta object of this instance.
+        /// </summary>
+        internal override Meta Meta
+        {
+            get
+            {
+                if ( meta == null )
+                    meta = new Meta( typeof(Image) );
+                return meta;
+            }
+        }
+        static Meta meta;
+        #endregion
     }
-    static Meta meta;
-    #endregion
-  }
 }

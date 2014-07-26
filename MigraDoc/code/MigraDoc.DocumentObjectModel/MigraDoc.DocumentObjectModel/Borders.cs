@@ -195,7 +195,7 @@ namespace MigraDoc.DocumentObjectModel
         if (!border.visible.IsNull && !border.Visible)
           return 0;
 
-        if (border != null && !border.width.IsNull)
+        if (!border.width.IsNull)
           return border.Width.Point;
 
         if (!border.color.IsNull || !border.style.IsNull || border.Visible) {

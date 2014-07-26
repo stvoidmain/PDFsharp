@@ -30,65 +30,116 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using MigraDoc.DocumentObjectModel;
+using MigraDoc.DocumentObjectModel.Tables;
 using MigraDoc.DocumentObjectModel.Visitors;
 
 namespace MigraDoc.Rendering
 {
-  /// <summary>
-  /// Formatting information for tables.
-  /// </summary>
-  internal class TableFormatInfo : FormatInfo
-  {
-    internal TableFormatInfo()
+    /// <summary>
+    /// Formatting information for tables.
+    /// </summary>
+    internal class TableFormatInfo : FormatInfo
     {
+        internal TableFormatInfo()
+        {
+        }
+
+        internal override bool EndingIsComplete
+        {
+            get { return this.isEnding; }
+        }
+
+
+        internal override bool StartingIsComplete
+        {
+            get { return !this.IsEmpty && this.startRow > this.lastHeaderRow; }
+        }
+
+        internal override bool IsComplete
+        {
+            get { return false; }
+        }
+
+        internal override bool IsEmpty
+        {
+            get { return this.startRow < 0; }
+        }
+
+        internal override bool IsEnding
+        {
+            get { return this.isEnding; }
+        }
+        internal bool isEnding;
+
+        internal override bool IsStarting
+        {
+            get
+            {
+                return this.startRow == this.lastHeaderRow + 1;
+            }
+        }
+
+        public override string ToString()
+        {
+            return string.Format( "start: {0}, end: {1}, cRi: {2}", startRow, endRow, cellRenderInfos != null ? cellRenderInfos.Count : 0 );
+        }
+
+        internal int startColumn = -1;
+        internal int endColumn = -1;
+
+        internal int startRow = -1;
+        internal int endRow = -1;
+
+        internal int lastHeaderRow = -1;
+        internal Dictionary<Cell, FormattedCell> formattedCells;
+        internal Dictionary<Cell, ProcessedTable> processedTables;
+        internal Dictionary<Cell, IEnumerable<RenderInfo>> cellRenderInfos;
+        internal MergedCellList mergedCells;
+        internal SortedList bottomBorderMap;
+        internal SortedList connectedRowsMap;
+        internal int lastRenderedRow = -1;
     }
 
-    internal override bool EndingIsComplete
+    internal class ProcessedElement
     {
-      get { return this.isEnding; }
+        private DocumentObject element;
+        public ProcessedElement( DocumentObject obj )
+        {
+            element = obj;
+        }
+
+        public virtual DocumentObject Element
+        {
+            get
+            {
+                return element;
+            }
+            set
+            {
+                element = value;
+            }
+        }
+
+        internal virtual bool Done { get; set; }
     }
 
-
-    internal override bool StartingIsComplete
+    internal class ProcessedTable : ProcessedElement
     {
-      get { return !this.IsEmpty && this.startRow > this.lastHeaderRow; }
+        public ProcessedTable( Table t ) : base( t )
+        {
+            table = t;
+        }
+        internal Table table;
+        internal int lastRow;
+        internal override bool Done
+        {
+            get
+            {
+                return lastRow >= table.Rows.Count - 1;
+            }
+            set {; }
+        }
     }
-
-    internal override bool IsComplete
-    {
-      get { return false; }
-    }
-
-    internal override bool IsEmpty
-    {
-      get { return this.startRow < 0; }
-    }
-
-    internal override bool IsEnding
-    {
-      get { return this.isEnding; }
-    }
-    internal bool isEnding;
-
-    internal override bool IsStarting
-    {
-      get
-      {
-        return this.startRow == this.lastHeaderRow + 1;
-      }
-    }
-
-    internal int startColumn = -1;
-    internal int endColumn = -1;
-
-    internal int startRow = -1;
-    internal int endRow = -1;
-
-    internal int lastHeaderRow = -1;
-    internal Hashtable formattedCells;
-    internal MergedCellList mergedCells;
-    internal SortedList bottomBorderMap;
-    internal SortedList connectedRowsMap;
-  }
 }

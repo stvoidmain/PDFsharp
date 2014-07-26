@@ -30,7 +30,8 @@
 
 using System;
 using System.Collections;
-
+using System.Collections.Generic;
+using System.Linq;
 using MigraDoc.DocumentObjectModel;
 using MigraDoc.DocumentObjectModel.Internals;
 
@@ -77,7 +78,7 @@ namespace MigraDoc.Rendering
       get { return this.fieldInfos; }
     }
 
-    void IAreaProvider.StoreRenderInfos(ArrayList renderInfos)
+    void IAreaProvider.StoreRenderInfos( IEnumerable<RenderInfo> renderInfos )
     {
       this.renderInfos = renderInfos;
     }
@@ -91,7 +92,7 @@ namespace MigraDoc.Rendering
     internal RenderInfo[] GetRenderInfos()
     {
       if (this.renderInfos != null)
-        return (RenderInfo[])this.renderInfos.ToArray(typeof(RenderInfo));
+        return this.renderInfos.ToArray();
 
       return new RenderInfo[0];
     }
@@ -128,7 +129,7 @@ namespace MigraDoc.Rendering
     private HeaderFooter headerFooter;
     private FieldInfos fieldInfos;
     private TopDownFormatter formatter;
-    private ArrayList renderInfos;
+    private IEnumerable<RenderInfo> renderInfos;
     private XGraphics gfx;
     private bool isFirstArea;
     private XUnit contentHeight;

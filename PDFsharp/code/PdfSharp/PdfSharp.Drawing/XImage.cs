@@ -54,31 +54,31 @@ using PdfSharp.Pdf.Advanced;
 
 namespace PdfSharp.Drawing
 {
-  /// <summary>
-  /// Defines an object used to draw image files (bmp, png, jpeg, gif) and PDF forms.
-  /// An abstract base class that provides functionality for the Bitmap and Metafile descended classes.
-  /// </summary>
-  public class XImage : IDisposable
-  {
     /// <summary>
-    /// Initializes a new instance of the <see cref="XImage"/> class.
+    /// Defines an object used to draw image files (bmp, png, jpeg, gif) and PDF forms.
+    /// An abstract base class that provides functionality for the Bitmap and Metafile descended classes.
     /// </summary>
-    protected XImage()
+    public class XImage : IDisposable
     {
-    }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="XImage"/> class.
+        /// </summary>
+        protected XImage()
+        {
+        }
 
 #if GDI
-    /// <summary>
-    /// Initializes a new instance of the <see cref="XImage"/> class from a GDI+ image.
-    /// </summary>
-    XImage(Image image)
-    {
-      this.gdiImage = image;
+        /// <summary>
+        /// Initializes a new instance of the <see cref="XImage"/> class from a GDI+ image.
+        /// </summary>
+        XImage( Image image )
+        {
+            this.gdiImage = image;
 #if WPF
       this.wpfImage = ImageHelper.CreateBitmapSource(image);
 #endif
-      Initialize();
-    }
+            Initialize();
+        }
 #endif
 
 #if WPF && !SILVERLIGHT
@@ -92,21 +92,21 @@ namespace PdfSharp.Drawing
     }
 #endif
 
-    XImage(string path)
-    {
-      path = Path.GetFullPath(path);
-      if (!File.Exists(path))
-        throw new FileNotFoundException(PSSR.FileNotFound(path), path);
+        XImage( string path )
+        {
+            path = Path.GetFullPath( path );
+            if ( !File.Exists( path ) )
+                throw new FileNotFoundException( PSSR.FileNotFound( path ), path );
 
-      this.path = path;
+            this.path = path;
 
-      //FileStream file = new FileStream(filename, FileMode.Open);
-      //BitsLength = (int)file.Length;
-      //Bits = new byte[BitsLength];
-      //file.Read(Bits, 0, BitsLength);
-      //file.Close();
+            //FileStream file = new FileStream(filename, FileMode.Open);
+            //BitsLength = (int)file.Length;
+            //Bits = new byte[BitsLength];
+            //file.Read(Bits, 0, BitsLength);
+            //file.Close();
 #if GDI
-      this.gdiImage = Image.FromFile(path);
+            this.gdiImage = Image.FromFile( path );
 #endif
 #if WPF && !SILVERLIGHT
       //BitmapSource.Create()
@@ -124,16 +124,29 @@ namespace PdfSharp.Drawing
       RectangleF rect = this.image.GetBounds(ref units);
       int width = this.image.Width;
 #endif
-      Initialize();
-    }
+            Initialize();
+        }
 
-    XImage(Stream stream)
-    {
-      // Create a dummy unique path
-      this.path = "*" + Guid.NewGuid().ToString("B");
+        /// <summary>
+        /// Creates an image from the specified stream.
+        /// </summary>
+        /// <param name="stream">A MemoryStream object containing the image data.</param>
+        /// <returns></returns>
+        public static XImage FromStream( MemoryStream stream )
+        {
+            if ( PdfReader.TestPdfFile( stream ) > 0 )
+                return new XPdfForm( stream, PdfDocumentOpenMode.ReadOnly );
+
+            return new XImage( stream );
+        }
+
+        XImage( Stream stream )
+        {
+            // Create a dummy unique path
+            this.path = "*" + Guid.NewGuid().ToString( "B" );
 
 #if GDI
-      this.gdiImage = Image.FromStream(stream);
+            this.gdiImage = Image.FromStream( stream );
 #endif
 #if WPF
       throw new NotImplementedException();
@@ -150,27 +163,27 @@ namespace PdfSharp.Drawing
       RectangleF rect = this.image.GetBounds(ref units);
       int width = this.image.Width;
 #endif
-      Initialize();
-    }
+            Initialize();
+        }
 
 #if GDI
 #if UseGdiObjects
-    /// <summary>
-    /// Implicit conversion from Image to XImage.
-    /// </summary>
-    public static implicit operator XImage(Image image)
-    {
-      return new XImage(image);
-    }
+        /// <summary>
+        /// Implicit conversion from Image to XImage.
+        /// </summary>
+        public static implicit operator XImage( Image image )
+        {
+            return new XImage( image );
+        }
 #endif
 
-    /// <summary>
-    /// Conversion from Image to XImage.
-    /// </summary>
-    public static XImage FromGdiPlusImage(Image image)
-    {
-      return new XImage(image);
-    }
+        /// <summary>
+        /// Conversion from Image to XImage.
+        /// </summary>
+        public static XImage FromGdiPlusImage( Image image )
+        {
+            return new XImage( image );
+        }
 #endif
 
 #if WPF && !SILVERLIGHT
@@ -183,70 +196,70 @@ namespace PdfSharp.Drawing
     }
 #endif
 
-    /// <summary>
-    /// Creates an image from the specified file.
-    /// </summary>
-    /// <param name="path">The path to a BMP, PNG, GIF, JPEG, TIFF, or PDF file.</param>
-    public static XImage FromFile(string path)
-    {
-      if (PdfReader.TestPdfFile(path) > 0)
-        return new XPdfForm(path);
-      return new XImage(path);
-    }
-
-    /// <summary>
-    /// Tests if a file exist. Supports PDF files with page number suffix.
-    /// </summary>
-    /// <param name="path">The path to a BMP, PNG, GIF, JPEG, TIFF, or PDF file.</param>
-    public static bool ExistsFile(string path)
-    {
-      if (PdfReader.TestPdfFile(path) > 0)
-        return true;
-      return File.Exists(path);
-    }
-
-    void Initialize()
-    {
-#if GDI
-      if (this.gdiImage != null)
-      {
-        // ImageFormat has no overridden Equals...
-        string guid = this.gdiImage.RawFormat.Guid.ToString("B").ToUpper();
-        switch (guid)
+        /// <summary>
+        /// Creates an image from the specified file.
+        /// </summary>
+        /// <param name="path">The path to a BMP, PNG, GIF, JPEG, TIFF, or PDF file.</param>
+        public static XImage FromFile( string path )
         {
-          case "{B96B3CAA-0728-11D3-9D7B-0000F81EF32E}":  // memoryBMP
-          case "{B96B3CAB-0728-11D3-9D7B-0000F81EF32E}":  // bmp
-          case "{B96B3CAF-0728-11D3-9D7B-0000F81EF32E}":  // png
-            this.format = XImageFormat.Png;
-            break;
-
-          case "{B96B3CAE-0728-11D3-9D7B-0000F81EF32E}":  // jpeg
-            this.format = XImageFormat.Jpeg;
-            break;
-
-          case "{B96B3CB0-0728-11D3-9D7B-0000F81EF32E}":  // gif
-            this.format = XImageFormat.Gif;
-            break;
-
-          case "{B96B3CB1-0728-11D3-9D7B-0000F81EF32E}":  // tiff
-            this.format = XImageFormat.Tiff;
-            break;
-
-          case "{B96B3CB5-0728-11D3-9D7B-0000F81EF32E}":  // icon
-            this.format = XImageFormat.Icon;
-            break;
-
-          case "{B96B3CAC-0728-11D3-9D7B-0000F81EF32E}":  // emf
-          case "{B96B3CAD-0728-11D3-9D7B-0000F81EF32E}":  // wmf
-          case "{B96B3CB2-0728-11D3-9D7B-0000F81EF32E}":  // exif
-          case "{B96B3CB3-0728-11D3-9D7B-0000F81EF32E}":  // photoCD
-          case "{B96B3CB4-0728-11D3-9D7B-0000F81EF32E}":  // flashPIX
-
-          default:
-            throw new InvalidOperationException("Unsupported image format.");
+            if ( PdfReader.TestPdfFile( path ) > 0 )
+                return new XPdfForm( path );
+            return new XImage( path );
         }
-        return;
-      }
+
+        /// <summary>
+        /// Tests if a file exist. Supports PDF files with page number suffix.
+        /// </summary>
+        /// <param name="path">The path to a BMP, PNG, GIF, JPEG, TIFF, or PDF file.</param>
+        public static bool ExistsFile( string path )
+        {
+            if ( PdfReader.TestPdfFile( path ) > 0 )
+                return true;
+            return File.Exists( path );
+        }
+
+        void Initialize()
+        {
+#if GDI
+            if ( this.gdiImage != null )
+            {
+                // ImageFormat has no overridden Equals...
+                string guid = this.gdiImage.RawFormat.Guid.ToString( "B" ).ToUpper();
+                switch ( guid )
+                {
+                    case "{B96B3CAA-0728-11D3-9D7B-0000F81EF32E}":  // memoryBMP
+                    case "{B96B3CAB-0728-11D3-9D7B-0000F81EF32E}":  // bmp
+                    case "{B96B3CAF-0728-11D3-9D7B-0000F81EF32E}":  // png
+                        this.format = XImageFormat.Png;
+                        break;
+
+                    case "{B96B3CAE-0728-11D3-9D7B-0000F81EF32E}":  // jpeg
+                        this.format = XImageFormat.Jpeg;
+                        break;
+
+                    case "{B96B3CB0-0728-11D3-9D7B-0000F81EF32E}":  // gif
+                        this.format = XImageFormat.Gif;
+                        break;
+
+                    case "{B96B3CB1-0728-11D3-9D7B-0000F81EF32E}":  // tiff
+                        this.format = XImageFormat.Tiff;
+                        break;
+
+                    case "{B96B3CB5-0728-11D3-9D7B-0000F81EF32E}":  // icon
+                        this.format = XImageFormat.Icon;
+                        break;
+
+                    case "{B96B3CAC-0728-11D3-9D7B-0000F81EF32E}":  // emf
+                    case "{B96B3CAD-0728-11D3-9D7B-0000F81EF32E}":  // wmf
+                    case "{B96B3CB2-0728-11D3-9D7B-0000F81EF32E}":  // exif
+                    case "{B96B3CB3-0728-11D3-9D7B-0000F81EF32E}":  // photoCD
+                    case "{B96B3CB4-0728-11D3-9D7B-0000F81EF32E}":  // flashPIX
+
+                    default:
+                        throw new InvalidOperationException( "Unsupported image format." );
+                }
+                return;
+            }
 #endif
 #if WPF
 #if !SILVERLIGHT
@@ -309,7 +322,7 @@ namespace PdfSharp.Drawing
       // AGHACK
 #endif
 #endif
-    }
+        }
 
 #if WPF
     /// <summary>
@@ -470,29 +483,29 @@ namespace PdfSharp.Drawing
     }
 #endif
 
-    /// <summary>
-    /// Under construction
-    /// </summary>
-    public void Dispose()
-    {
-      Dispose(true);
-      //GC.SuppressFinalize(this);
-    }
+        /// <summary>
+        /// Under construction
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose( true );
+            //GC.SuppressFinalize(this);
+        }
 
-    /// <summary>
-    /// Disposes underlying GDI+ object.
-    /// </summary>
-    protected virtual void Dispose(bool disposing)
-    {
-      if (!this.disposed)
-        this.disposed = true;
+        /// <summary>
+        /// Disposes underlying GDI+ object.
+        /// </summary>
+        protected virtual void Dispose( bool disposing )
+        {
+            if ( !this.disposed )
+                this.disposed = true;
 
 #if GDI
-      if (this.gdiImage != null)
-      {
-        this.gdiImage.Dispose();
-        this.gdiImage = null;
-      }
+            if ( this.gdiImage != null )
+            {
+                this.gdiImage.Dispose();
+                this.gdiImage = null;
+            }
 #endif
 #if WPF
       if (wpfImage != null)
@@ -500,18 +513,18 @@ namespace PdfSharp.Drawing
         wpfImage = null;
       }
 #endif
-    }
-    bool disposed;
+        }
+        bool disposed;
 
 
-    /// <summary>
-    /// Gets the width of the image.
-    /// </summary>
-    [Obsolete("Use either PixelWidth or PointWidth. Temporarily obsolete because of rearrangements for WPF. Currently same as PixelWidth, but will become PointWidth in future releases of PDFsharp.")]
-    public virtual double Width
-    {
-      get
-      {
+        /// <summary>
+        /// Gets the width of the image.
+        /// </summary>
+        [Obsolete("Use either PixelWidth or PointWidth. Temporarily obsolete because of rearrangements for WPF. Currently same as PixelWidth, but will become PointWidth in future releases of PDFsharp.")]
+        public virtual double Width
+        {
+            get
+            {
 #if GDI && WPF
         double gdiWidth = this.gdiImage.Width;
         double wpfWidth = this.wpfImage.PixelWidth;
@@ -519,7 +532,7 @@ namespace PdfSharp.Drawing
         return wpfWidth;
 #endif
 #if GDI && !WPF
-        return this.gdiImage.Width;
+                return this.gdiImage.Width;
 #endif
 #if WPF && !GDI
 #if !SILVERLIGHT
@@ -529,17 +542,17 @@ namespace PdfSharp.Drawing
         return 100;
 #endif
 #endif
-      }
-    }
+            }
+        }
 
-    /// <summary>
-    /// Gets the height of the image.
-    /// </summary>
-    [Obsolete("Use either PixelHeight or PointHeight. Temporarily obsolete because of rearrangements for WPF. Currently same as PixelHeight, but will become PointHeight in future releases of PDFsharp.")]
-    public virtual double Height
-    {
-      get
-      {
+        /// <summary>
+        /// Gets the height of the image.
+        /// </summary>
+        [Obsolete("Use either PixelHeight or PointHeight. Temporarily obsolete because of rearrangements for WPF. Currently same as PixelHeight, but will become PointHeight in future releases of PDFsharp.")]
+        public virtual double Height
+        {
+            get
+            {
 #if GDI && WPF
         double gdiHeight = this.gdiImage.Height;
         double wpfHeight = this.wpfImage.PixelHeight;
@@ -547,7 +560,7 @@ namespace PdfSharp.Drawing
         return wpfHeight;
 #endif
 #if GDI && !WPF
-        return this.gdiImage.Height;
+                return this.gdiImage.Height;
 #endif
 #if WPF && !GDI
 #if !SILVERLIGHT
@@ -557,16 +570,16 @@ namespace PdfSharp.Drawing
         return 100;
 #endif
 #endif
-      }
-    }
+            }
+        }
 
-    /// <summary>
-    /// Gets the width of the image in point.
-    /// </summary>
-    public virtual double PointWidth
-    {
-      get
-      {
+        /// <summary>
+        /// Gets the width of the image in point.
+        /// </summary>
+        public virtual double PointWidth
+        {
+            get
+            {
 #if GDI && WPF
         double gdiWidth = this.gdiImage.Width * 72 / this.gdiImage.HorizontalResolution;
         double wpfWidth = this.wpfImage.Width * 72.0 / 96.0;
@@ -575,7 +588,7 @@ namespace PdfSharp.Drawing
         return wpfWidth;
 #endif
 #if GDI && !WPF
-        return this.gdiImage.Width * 72 / this.gdiImage.HorizontalResolution;
+                return this.gdiImage.Width * 72 / this.gdiImage.HorizontalResolution;
 #endif
 #if WPF && !GDI
 #if !SILVERLIGHT
@@ -586,16 +599,16 @@ namespace PdfSharp.Drawing
         return 100;
 #endif
 #endif
-      }
-    }
+            }
+        }
 
-    /// <summary>
-    /// Gets the height of the image in point.
-    /// </summary>
-    public virtual double PointHeight
-    {
-      get
-      {
+        /// <summary>
+        /// Gets the height of the image in point.
+        /// </summary>
+        public virtual double PointHeight
+        {
+            get
+            {
 #if GDI && WPF
         double gdiHeight = this.gdiImage.Height * 72 / this.gdiImage.HorizontalResolution;
         double wpfHeight = this.wpfImage.Height * 72.0 / 96.0;
@@ -603,7 +616,7 @@ namespace PdfSharp.Drawing
         return wpfHeight;
 #endif
 #if GDI && !WPF
-        return this.gdiImage.Height * 72 / this.gdiImage.HorizontalResolution;
+                return this.gdiImage.Height * 72 / this.gdiImage.HorizontalResolution;
 #endif
 #if WPF || SILVERLIGHT && !GDI
 #if !SILVERLIGHT
@@ -614,16 +627,16 @@ namespace PdfSharp.Drawing
         return 100;
 #endif
 #endif
-      }
-    }
+            }
+        }
 
-    /// <summary>
-    /// Gets the width of the image in pixels.
-    /// </summary>
-    public virtual int PixelWidth
-    {
-      get
-      {
+        /// <summary>
+        /// Gets the width of the image in pixels.
+        /// </summary>
+        public virtual int PixelWidth
+        {
+            get
+            {
 #if GDI && WPF
         int gdiWidth = this.gdiImage.Width;
         int wpfWidth = this.wpfImage.PixelWidth;
@@ -631,7 +644,7 @@ namespace PdfSharp.Drawing
         return wpfWidth;
 #endif
 #if GDI && !WPF
-        return this.gdiImage.Width;
+                return this.gdiImage.Width;
 #endif
 #if WPF && !GDI
 #if !SILVERLIGHT
@@ -641,16 +654,16 @@ namespace PdfSharp.Drawing
         return 100;
 #endif
 #endif
-      }
-    }
+            }
+        }
 
-    /// <summary>
-    /// Gets the height of the image in pixels.
-    /// </summary>
-    public virtual int PixelHeight
-    {
-      get
-      {
+        /// <summary>
+        /// Gets the height of the image in pixels.
+        /// </summary>
+        public virtual int PixelHeight
+        {
+            get
+            {
 #if GDI && WPF
         int gdiHeight = this.gdiImage.Height;
         int wpfHeight = this.wpfImage.PixelHeight;
@@ -658,7 +671,7 @@ namespace PdfSharp.Drawing
         return wpfHeight;
 #endif
 #if GDI && !WPF
-        return this.gdiImage.Height;
+                return this.gdiImage.Height;
 #endif
 #if WPF && !GDI
 #if !SILVERLIGHT
@@ -668,24 +681,24 @@ namespace PdfSharp.Drawing
         return 100;
 #endif
 #endif
-      }
-    }
+            }
+        }
 
-    /// <summary>
-    /// Gets the size in point of the image.
-    /// </summary>
-    public virtual XSize Size
-    {
-      get { return new XSize(PointWidth, PointHeight); }
-    }
+        /// <summary>
+        /// Gets the size in point of the image.
+        /// </summary>
+        public virtual XSize Size
+        {
+            get { return new XSize( PointWidth, PointHeight ); }
+        }
 
-    /// <summary>
-    /// Gets the horizontal resolution of the image.
-    /// </summary>
-    public virtual double HorizontalResolution
-    {
-      get
-      {
+        /// <summary>
+        /// Gets the horizontal resolution of the image.
+        /// </summary>
+        public virtual double HorizontalResolution
+        {
+            get
+            {
 #if GDI && WPF
         double gdiResolution = this.gdiImage.HorizontalResolution;
         double wpfResolution = this.wpfImage.PixelWidth * 96.0 / this.wpfImage.Width;
@@ -693,7 +706,7 @@ namespace PdfSharp.Drawing
         return wpfResolution;
 #endif
 #if GDI && !WPF
-        return this.gdiImage.HorizontalResolution;
+                return this.gdiImage.HorizontalResolution;
 #endif
 #if WPF && !GDI
 #if !SILVERLIGHT
@@ -703,16 +716,16 @@ namespace PdfSharp.Drawing
         return 96;
 #endif
 #endif
-      }
-    }
+            }
+        }
 
-    /// <summary>
-    /// Gets the vertical resolution of the image.
-    /// </summary>
-    public virtual double VerticalResolution
-    {
-      get
-      {
+        /// <summary>
+        /// Gets the vertical resolution of the image.
+        /// </summary>
+        public virtual double VerticalResolution
+        {
+            get
+            {
 #if GDI && WPF
         double gdiResolution = this.gdiImage.VerticalResolution;
         double wpfResolution = this.wpfImage.PixelHeight * 96.0 / this.wpfImage.Height;
@@ -720,7 +733,7 @@ namespace PdfSharp.Drawing
         return wpfResolution;
 #endif
 #if GDI && !WPF
-        return this.gdiImage.VerticalResolution;
+                return this.gdiImage.VerticalResolution;
 #endif
 #if WPF && !GDI
 #if !SILVERLIGHT
@@ -730,27 +743,27 @@ namespace PdfSharp.Drawing
         return 96;
 #endif
 #endif
-      }
-    }
+            }
+        }
 
-    /// <summary>
-    /// Gets or sets a flag indicating whether image interpolation is to be performed. 
-    /// </summary>
-    public virtual bool Interpolate
-    {
-      get { return this.interpolate; }
-      set { this.interpolate = value; }
-    }
-    bool interpolate = true;
+        /// <summary>
+        /// Gets or sets a flag indicating whether image interpolation is to be performed. 
+        /// </summary>
+        public virtual bool Interpolate
+        {
+            get { return this.interpolate; }
+            set { this.interpolate = value; }
+        }
+        bool interpolate = true;
 
-    /// <summary>
-    /// Gets the format of the image.
-    /// </summary>
-    public XImageFormat Format
-    {
-      get { return this.format; }
-    }
-    XImageFormat format;
+        /// <summary>
+        /// Gets the format of the image.
+        /// </summary>
+        public XImageFormat Format
+        {
+            get { return this.format; }
+        }
+        XImageFormat format;
 
 #if WPF
     /// <summary>
@@ -834,8 +847,8 @@ namespace PdfSharp.Drawing
         catch { }
       }
     }
-#endif    
-#endif    
+#endif
+#endif
 
 
 #if DEBUG_
@@ -858,21 +871,21 @@ namespace PdfSharp.Drawing
     }
 #endif
 #if GDI
-    internal Image gdiImage;
+        internal Image gdiImage;
 #endif
 #if WPF
     internal BitmapSource wpfImage;
 #endif
 
-    /// <summary>
-    /// If path starts with '*' the image is created from a stream and the path is a GUID.
-    /// </summary>
-    internal string path;
+        /// <summary>
+        /// If path starts with '*' the image is created from a stream and the path is a GUID.
+        /// </summary>
+        internal string path;
 
-    /// <summary>
-    /// Cache PdfImageTable.ImageSelector to speed up finding the right PdfImage
-    /// if this image is used more than once.
-    /// </summary>
-    internal PdfImageTable.ImageSelector selector;
-  }
+        /// <summary>
+        /// Cache PdfImageTable.ImageSelector to speed up finding the right PdfImage
+        /// if this image is used more than once.
+        /// </summary>
+        internal PdfImageTable.ImageSelector selector;
+    }
 }

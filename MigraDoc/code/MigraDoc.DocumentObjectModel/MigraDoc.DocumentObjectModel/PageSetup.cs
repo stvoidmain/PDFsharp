@@ -369,11 +369,11 @@ namespace MigraDoc.DocumentObjectModel
           PageSetup.defaultPageSetup.DifferentFirstPageHeaderFooter = false;
           PageSetup.defaultPageSetup.MirrorMargins = false;
           PageSetup.defaultPageSetup.HorizontalPageBreak = false;
-#if DEBUG
+#if _DEBUG
           PageSetup.defaultPageSetupClone = PageSetup.defaultPageSetup.Clone();
 #endif
         }
-#if DEBUG
+#if _DEBUG
         else
         {
           Debug.Assert(PageSetup.defaultPageSetup.PageFormat == PageSetup.defaultPageSetupClone.PageFormat, "DefaultPageSetup must not be modified");
@@ -397,7 +397,7 @@ namespace MigraDoc.DocumentObjectModel
       }
     }
     private static PageSetup defaultPageSetup;
-#if DEBUG
+#if _DEBUG
     private static PageSetup defaultPageSetupClone;
 #endif
 
