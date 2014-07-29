@@ -70,7 +70,7 @@ namespace MigraDoc.Rendering
         /// </summary>
         /// <param name="gfx">The graphics object to render on.</param>
         /// <param name="topLevel">if set to <c>true</c> formats the object is on top level.</param>
-        public void FormatOnAreas( XGraphics gfx, bool topLevel, int startIndex = 0, FormatInfo fInfo = null )
+        public void FormatOnAreas( XGraphics gfx, bool topLevel, int startIndex = 0, RenderInfo rInfo = null )
         {
             Area area = this.areaProvider.GetNextArea();
             if ( area == null )
@@ -80,8 +80,8 @@ namespace MigraDoc.Rendering
             this.gfx = gfx;
             XUnit prevBottomMargin = 0;
             XUnit yPos = prevBottomMargin;
-            RenderInfo prevRenderInfo = null;
-            FormatInfo prevFormatInfo = fInfo;
+            RenderInfo prevRenderInfo = rInfo;
+            FormatInfo prevFormatInfo = rInfo != null ? rInfo.FormatInfo : null;
             List<RenderInfo> renderInfos = new List<RenderInfo>();
             bool ready = this.elements.Count == 0;
             bool isFirstOnPage = true;
@@ -94,7 +94,12 @@ namespace MigraDoc.Rendering
             int idx = startIndex;
             while ( !ready && area != null )
             {
+                LastPrevRenderInfo = null;
                 DocumentObject docObj = this.elements[ idx ];
+                if ( idx == startIndex && rInfo != null && rInfo.DocumentObject != docObj )
+                {
+                    prevFormatInfo = null;
+                }
                 var maxBottom = docObj.Section != null ? ( docObj.Section.PageSetup.PageHeight.Point - docObj.Section.PageSetup.TopMargin.Point ) : 0;
 
                 Renderer renderer = Renderer.Create( gfx, this.documentRenderer, docObj, this.areaProvider.AreaFieldInfos );
@@ -184,6 +189,7 @@ namespace MigraDoc.Rendering
                             prevRenderInfo = null;
                         }
 
+                        LastIndex = idx;
                         ++idx;
                     }
                 }
@@ -191,60 +197,69 @@ namespace MigraDoc.Rendering
                 {
                     if ( renderer.RenderInfo.FormatInfo.IsEmpty && isFirstOnPage )
                     {
-                        area = area.Unite( new Rectangle( area.X, area.Y, area.Width, double.MaxValue ) );
-
-                        renderer = Renderer.Create( gfx, this.documentRenderer, docObj, this.areaProvider.AreaFieldInfos );
-                        renderer.MaxElementHeight = maxHeight;
-                        renderer.Format( area, prevFormatInfo );
-                        prevFormatInfo = null;
-
-                        //Added KlPo 12.07.07
-                        this.areaProvider.PositionHorizontally( renderer.RenderInfo.LayoutInfo );
-                        this.areaProvider.PositionVertically( renderer.RenderInfo.LayoutInfo );
-                        //Added End
-                        ready = idx == this.elements.Count - 1;
-
-                        ++idx;
-                    }
-                    prevRenderInfo = FinishPage( renderer.RenderInfo, pagebreakBefore, ref renderInfos );
-                    if ( prevRenderInfo != null )
-                        prevFormatInfo = prevRenderInfo.FormatInfo;
-                    else
-                    {
-                        prevFormatInfo = null;
-                    }
-                    isFirstOnPage = true;
-                    prevBottomMargin = 0;
-#if false
-          area = this.areaProvider.GetNextArea();
-#else
-                    if ( !ready )  //!!!newTHHO 19.01.2007: korrekt? oder GetNextArea immer ausführen???
-                    {
+                        //LastPrevRenderInfo = renderer.RenderInfo;
                         area = this.areaProvider.GetNextArea();
                         if ( area != null )
                         {
-                            maxHeight = area.Height;
+                            //var h = docObj.Section.PageSetup.PageHeight.Point;
+                            //h -= docObj.Section.PageSetup.TopMargin.Point;
+                            //h -= docObj.Section.PageSetup.BottomMargin.Point;
+                            //area = area.Unite( new Rectangle( area.X, area.Y, area.Width, h ) );
+
+                            renderer = Renderer.Create( gfx, this.documentRenderer, docObj, this.areaProvider.AreaFieldInfos );
+                            renderer.MaxElementHeight = area.Height;
+                            renderer.Format( area, prevFormatInfo );
+                            prevFormatInfo = null;
+
+                            //Added KlPo 12.07.07
+                            this.areaProvider.PositionHorizontally( renderer.RenderInfo.LayoutInfo );
+                            this.areaProvider.PositionVertically( renderer.RenderInfo.LayoutInfo );
+                            //Added End
+                            ready = idx == this.elements.Count - 1;
+
+                            LastIndex = idx;
+                            ++idx;
                         }
                     }
-#endif
+                    if ( area != null )
+                    {
+                        prevRenderInfo = FinishPage( renderer.RenderInfo, pagebreakBefore, ref renderInfos );
+                        if ( prevRenderInfo != null )
+                            prevFormatInfo = prevRenderInfo.FormatInfo;
+                        else
+                        {
+                            prevFormatInfo = null;
+                        }
+                        isFirstOnPage = true;
+                        prevBottomMargin = 0;
+
+                        if ( !ready )  //!!!newTHHO 19.01.2007: korrekt? oder GetNextArea immer ausführen???
+                        {
+                            area = this.areaProvider.GetNextArea();
+                            if ( area != null )
+                            {
+                                maxHeight = area.Height;
+                            }
+                        }
+                    }
                 }
+
                 LastIndex = idx;
                 if ( idx == this.elements.Count && !ready )
                 {
                     this.areaProvider.StoreRenderInfos( renderInfos );
                     ready = true;
+                    LastPrevRenderInfo = null;
                 }
-                if ( !ready && area == null )
+                else if ( !ready )
                 {
-                    if ( renderer != null )
-                    {
-                        LastRenderInfo = renderer.RenderInfo;
-                    }
+                    LastPrevRenderInfo = prevRenderInfo;
                 }
             }
         }
 
-        internal RenderInfo LastRenderInfo { get; private set; }
+        internal RenderInfo LastPrevRenderInfo { get; private set; }
+
         /// <summary>
         /// Finishes rendering for the page.
         /// </summary>
@@ -314,7 +329,7 @@ namespace MigraDoc.Rendering
             if ( formatInfo.IsEnding && !formatInfo.EndingIsComplete )
             {
                 Area area = this.areaProvider.ProbeNextArea();
-                if ( area.Height > prevLayoutInfo.TrailingHeight + layoutInfo.TrailingHeight + Renderer.Tolerance )
+                if ( area != null && area.Height > prevLayoutInfo.TrailingHeight + layoutInfo.TrailingHeight + Renderer.Tolerance )
                     return true;
             }
 

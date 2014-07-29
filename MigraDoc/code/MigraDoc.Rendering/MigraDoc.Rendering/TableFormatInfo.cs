@@ -28,7 +28,7 @@
 // DEALINGS IN THE SOFTWARE.
 #endregion
 
-using System;
+using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using MigraDoc.DocumentObjectModel;
@@ -48,7 +48,15 @@ namespace MigraDoc.Rendering
 
         internal override bool EndingIsComplete
         {
-            get { return this.isEnding; }
+            get
+            {
+                var hasEnded = true;
+                if ( formattedCells != null && formattedCells.Count > 0 )
+                {
+                    //hasEnded = formattedCells.All( fc => fc.Value.Done );
+                }
+                return this.isEnding && hasEnded;
+            }
         }
 
 
@@ -83,7 +91,7 @@ namespace MigraDoc.Rendering
 
         public override string ToString()
         {
-            return string.Format( "start: {0}, end: {1}, cRi: {2}", startRow, endRow, cellRenderInfos != null ? cellRenderInfos.Count : 0 );
+            return string.Format( "start: {0}, end: {1}, cRi: {2}, tRc: {3}", startRow, endRow, cellRenderInfos != null ? cellRenderInfos.Count : 0, formattedCells.First().Key.Table.Rows.Count );
         }
 
         internal int startColumn = -1;

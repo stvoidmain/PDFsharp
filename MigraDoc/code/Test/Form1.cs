@@ -34,7 +34,7 @@ namespace Test
             t2.Borders.Width = "0.5pt";
             t2.Borders.Color = Colors.Blue;
             t2.AddColumn( w - 8 );
-            for ( int i = 0; i < 80; i++ )
+            for ( int i = 0; i < 70; i++ )
             {
                 t2.AddRow();
                 t2[ i, 0 ].AddParagraph( "Celda " + i );
@@ -44,8 +44,9 @@ namespace Test
                     t2[ i, 0 ].AddParagraph( "Celda (2) " + i );
                 }
             }
-            //t.AddRow();
-            var t3 = t[ 0, 0 ].Elements.AddTable();
+
+            t.AddRow();
+            var t3 = t[ 1, 0 ].Elements.AddTable();
             t3.Borders.Width = "0.5pt";
             t3.Borders.Color = Colors.Green;
             t3.AddColumn( w - 8 );
@@ -56,6 +57,20 @@ namespace Test
                 while ( rnd.Next( 2 ) > 0 )
                 {
                     t3[ i, 0 ].AddParagraph( "Celda2 (2)" + i );
+                }
+            }
+
+            var t4 = t3[ 49, 0 ].Elements.AddTable();
+            t4.Borders.Width = "0.5pt";
+            t4.Borders.Color = Colors.Yellow;
+            t4.AddColumn( w - 16 );
+            for ( int i = 0; i < 50; i++ )
+            {
+                t4.AddRow();
+                t4[ i, 0 ].AddParagraph( "Celda3 " + i );
+                while ( rnd.Next( 2 ) > 0 )
+                {
+                    t4[ i, 0 ].AddParagraph( "Celda3 (2)" + i );
                 }
             }
 

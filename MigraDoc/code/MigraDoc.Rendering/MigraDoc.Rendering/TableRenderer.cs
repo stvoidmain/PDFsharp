@@ -49,15 +49,13 @@ namespace MigraDoc.Rendering
     internal class TableRenderer : Renderer
     {
         internal TableRenderer( XGraphics gfx, Table documentObject, FieldInfos fieldInfos )
-          :
-          base( gfx, documentObject, fieldInfos )
+          : base( gfx, documentObject, fieldInfos )
         {
             table = documentObject;
         }
 
         internal TableRenderer( XGraphics gfx, RenderInfo renderInfo, FieldInfos fieldInfos )
-          :
-          base( gfx, renderInfo, fieldInfos )
+          : base( gfx, renderInfo, fieldInfos )
         {
             table = ( Table ) this.renderInfo.DocumentObject;
         }
@@ -182,6 +180,7 @@ namespace MigraDoc.Rendering
             else
                 targetY = innerRect.Y + cell.Row.TopPadding;
 
+#if DEBUG
             var lri = renderInfos.ToList();
             if ( lri.Any( r => r is TableRenderInfo ) )
             {
@@ -191,7 +190,7 @@ namespace MigraDoc.Rendering
                     System.Diagnostics.Debug.WriteLine( "RenderInfo (TableRenderer): {0}", fri );
                 }
             }
-            //renderInfos = lri.ToArray();
+#endif
             RenderByInfos( targetX, targetY, renderInfos );
         }
 
@@ -199,7 +198,7 @@ namespace MigraDoc.Rendering
 
         Rectangle GetInnerRect( XUnit startingHeight, Cell cell )
         {
-            BordersRenderer bordersRenderer = new BordersRenderer( mergedCells.GetEffectiveBorders( cell ), gfx );
+            //BordersRenderer bordersRenderer = new BordersRenderer( mergedCells.GetEffectiveBorders( cell ), gfx );
             FormattedCell formattedCell = formattedCells[ cell ];
             XUnit width = formattedCell.InnerWidth;
 
@@ -218,8 +217,10 @@ namespace MigraDoc.Rendering
             XUnit lowerBorderPos = ( XUnit ) bottomBorderMap[ cell.Row.Index + cell.MergeDown + 1 ];
 
 
-            XUnit height = lowerBorderPos - upperBorderPos;
-            height -= bordersRenderer.GetWidth( BorderType.Bottom );
+            //XUnit height = lowerBorderPos - upperBorderPos;
+            //height -= bordersRenderer.GetWidth( BorderType.Bottom );
+            XUnit height = formattedCell.InnerHeight;
+
 
             XUnit x = startX;
             for ( int clmIdx = 0; clmIdx < cell.Column.Index; ++clmIdx )
@@ -237,6 +238,18 @@ namespace MigraDoc.Rendering
             if ( lastRenderedRow >= endRow )
             {
                 //return;
+            }
+            if ( startRow >= table.Rows.Count )
+            {
+                return;
+            }
+            if ( endRow >= table.Rows.Count )
+            {
+                endRow = table.Rows.Count - 1;
+            }
+            if ( startRow > endRow )
+            {
+                return;
             }
             RenderHeaderRows();
             if ( startRow <= endRow )
@@ -268,8 +281,12 @@ namespace MigraDoc.Rendering
                 if ( formattedCells.Any( fc => fc.Key.Row.Index < startRow && !fc.Value.Done ) )
                 {
                     startRow--;
+                    //FormatCells( area, true );
                 }
-                FormatCells( area, true );
+                else
+                {
+                    //FormatCells( area, true );
+                }
                 processedTables = prevTableFormatInfo.processedTables;
                 //cellRenderInfos = prevTableFormatInfo.cellRenderInfos;
                 bottomBorderMap = prevTableFormatInfo.bottomBorderMap;
@@ -281,7 +298,6 @@ namespace MigraDoc.Rendering
                 //cellRenderInfos = new Dictionary<Cell, IEnumerable<RenderInfo>>();
                 mergedCells = new MergedCellList( table );
                 FormatCells( area );
-                ProcessTableCells();
                 CalcLastHeaderRow();
                 CreateConnectedRows();
                 CreateBottomBorderMap();
@@ -309,11 +325,12 @@ namespace MigraDoc.Rendering
                 return;
             }
             formattedCells = new Dictionary<Cell, FormattedCell>();
+            var area = new Rectangle( constrain.X, constrain.Y, constrain.Width, constrain.Height );
             foreach ( Cell cell in mergedCells.GetCells() )
             {
                 FormattedCell formattedCell = new FormattedCell( cell, documentRenderer, mergedCells.GetEffectiveBorders( cell ), fieldInfos, 0, 0 )
                 {
-                    Constrain = constrain
+                    Constrain = area
                 };
                 formattedCell.Format( gfx );
                 formattedCells.Add( cell, formattedCell );
@@ -322,38 +339,123 @@ namespace MigraDoc.Rendering
 
         void ReFormatCells( Area constrain )
         {
-            foreach ( Cell cell in mergedCells.GetCells() )
+            return;
+            var area = new Rectangle( constrain.X, constrain.Y, constrain.Width, constrain.Height );
+            var cells = mergedCells.GetCells();
+            for ( int i = startRow; i <= ( endRow >= 0 ? endRow : table.Rows.Count - 1 ); i++ )
             {
-                if ( formattedCells.ContainsKey( cell ) && !formattedCells[ cell ].Done )
+                foreach ( var cell in cells.Where( c => c.Row.Index == i ) )
                 {
-                    formattedCells[ cell ].Constrain = constrain;
-                    formattedCells[ cell ].ReFormat( gfx );
+                    if ( !formattedCells[ cell ].Done )
+                    {
+                        formattedCells[ cell ].Constrain = area;
+                        formattedCells[ cell ].ReFormat( gfx );
+                    }
+                }
+                var maxRowHeight = formattedCells.Where( fc => fc.Key.Row.Index == i ).Max( fc => fc.Value.InnerHeight.Point );
+                area = ( Rectangle ) area.Lower( maxRowHeight );
+                if ( area.Height <= 0 )
+                {
+                    break;
                 }
             }
             CreateBottomBorderMap();
         }
 
-        private void ProcessTableCells()
+        private double FormatRowCells( Area constrain, int row, bool overrideDone = false )
         {
-            processedTables = new Dictionary<Cell, ProcessedTable>();
-            for ( int i = 0; i < table.Rows.Count; i++ )
+            var area = new Rectangle( constrain.X, constrain.Y, constrain.Width, constrain.Height );
+            foreach ( var cell in mergedCells.GetRowCells( row ) )
             {
-                foreach ( Cell rowCell in mergedCells.GetRowCells( i ) )
+                if ( overrideDone || !formattedCells[ cell ].Done )
                 {
-                    if ( rowCell.Elements != null )
-                    {
-                        for ( int j = 0; j < rowCell.Elements.Count; j++ )
-                        {
-                            if ( rowCell.Elements[ j ] is Table )
-                            {
-                                var t = rowCell.Elements[ j ] as Table;
-                                processedTables.Add( rowCell, new ProcessedTable( t ) );
-                                break;
-                            }
-                        }
-                    }
+                    formattedCells[ cell ].Constrain = area;
+                    formattedCells[ cell ].ReFormat( gfx );
                 }
             }
+            return formattedCells.Where( fc => fc.Key.Row.Index == row ).Max( fc => GetInnerRect( 0, fc.Key ).Height.Point );
+        }
+
+        internal override void Format( Area area, FormatInfo previousFormatInfo )
+        {
+            DocumentElements elements = DocumentRelations.GetParent( table ) as DocumentElements;
+            if ( elements != null )
+            {
+                Section section = DocumentRelations.GetParent( elements ) as Section;
+                if ( section != null )
+                    doHorizontalBreak = section.PageSetup.HorizontalPageBreak;
+            }
+
+            renderInfo = new TableRenderInfo();
+            InitFormat( area, previousFormatInfo );
+
+            // Don't take any Rows higher then MaxElementHeight
+            XUnit topHeight = CalcStartingHeight();
+            XUnit probeHeight = topHeight;
+            XUnit offset = 0;
+            if ( startRow > lastHeaderRow + 1 &&
+              startRow < table.Rows.Count )
+                offset = ( XUnit ) bottomBorderMap[ startRow ] - topHeight;
+            else
+                offset = -CalcMaxTopBorderWidth( 0 );
+
+            int probeRow = startRow;
+            XUnit currentHeight = 0;
+            XUnit startingHeight = 0;
+            bool isEmpty = false;
+            var proveArea = new Rectangle( area.X, area.Y, area.Width, area.Height );
+
+            while ( probeRow < table.Rows.Count )
+            {
+                bool firstProbe = probeRow == startRow;
+                probeRow = ( int ) connectedRowsMap[ probeRow ];
+
+                var anyCellNotDone = formattedCells.Any( fc => fc.Key.Row.Index >= startRow && fc.Key.Row.Index < probeRow && !fc.Value.Done );
+
+                probeHeight = topHeight;
+                var rowHeight = FormatRowCells( proveArea, probeRow, previousFormatInfo != null );
+                probeHeight += rowHeight;
+                var anyCellNotDoneThisRow = formattedCells.Any( fc => fc.Key.Row.Index == probeRow && !fc.Value.Done );
+
+                if ( startingHeight == 0 )
+                {
+                    if ( probeHeight > area.Height && anyCellNotDoneThisRow )
+                    {
+                        isEmpty = true;
+                        break;
+                    }
+                    startingHeight = probeHeight;
+                }
+                if ( probeHeight + currentHeight > area.Height )
+                {
+                    break;
+                }
+                else
+                {
+                    currRow = probeRow;
+                    currentHeight += probeHeight;
+                    ++probeRow;
+                    proveArea.Height -= rowHeight;
+                }
+            }
+
+            if ( !isEmpty )
+            {
+                TableFormatInfo formatInfo = ( TableFormatInfo ) renderInfo.FormatInfo;
+                formatInfo.processedTables = processedTables;
+                formatInfo.startRow = startRow;
+                formatInfo.isEnding = currRow >= table.Rows.Count - 1;// && formattedCells.All( fc => fc.Value.Done );
+                formatInfo.endRow = currRow;
+
+                CreateBottomBorderMap();
+                formatInfo.bottomBorderMap = bottomBorderMap;
+
+                if ( formatInfo.isEnding && formattedCells.Any( fc => fc.Key.Row.Index >= startRow && fc.Key.Row.Index <= currRow && !fc.Value.Done ) )
+                {
+                    formatInfo.isEnding = false;
+                }
+            }
+            FinishLayoutInfo( area, currentHeight, startingHeight );
         }
 
         /// <summary>
@@ -361,7 +463,7 @@ namespace MigraDoc.Rendering
         /// </summary>
         /// <param name="area">The area on which to fit the table.</param>
         /// <param name="previousFormatInfo"></param>
-        internal override void Format( Area area, FormatInfo previousFormatInfo )
+        void Format2( Area area, FormatInfo previousFormatInfo )
         {
             DocumentElements elements = DocumentRelations.GetParent( table ) as DocumentElements;
             if ( elements != null )
@@ -393,24 +495,30 @@ namespace MigraDoc.Rendering
             {
                 bool firstProbe = probeRow == startRow;
                 probeRow = ( int ) connectedRowsMap[ probeRow ];
-                var anyTableNotDone = mergedCells.GetRowCells( probeRow ).Any( c => processedTables.ContainsKey( c ) && !processedTables[ c ].Done );
+
+                var anyCellNotDone = formattedCells.Any( fc => fc.Key.Row.Index >= startRow && fc.Key.Row.Index <= endRow && !fc.Value.Done );
+                if ( anyCellNotDone )
+                {
+                    //break;
+                }
+
                 // Don't take any Rows higher then MaxElementHeight
                 probeHeight = ( XUnit ) bottomBorderMap[ probeRow + 1 ] - offset;
-                if ( firstProbe && probeHeight > MaxElementHeight - Tolerance )
-                    probeHeight = MaxElementHeight - Tolerance;
-                if ( anyTableNotDone && previousFormatInfo != null )
+                if ( firstProbe && anyCellNotDone && previousFormatInfo != null )
                 {
-                    probeHeight = 0;
+                    probeHeight = topHeight;
                     for ( int i = startRow; i <= probeRow; i++ )
                     {
                         probeHeight += formattedCells.Where( fc => fc.Key.Row.Index == i ).Max( fc => fc.Value.InnerHeight.Point );
                     }
                 }
+                if ( firstProbe && probeHeight > MaxElementHeight - Tolerance )
+                    probeHeight = MaxElementHeight - Tolerance;
 
                 //The height for the first new row(s) + headerrows:
                 if ( startingHeight == 0 )
                 {
-                    if ( probeHeight > area.Height && !anyTableNotDone )
+                    if ( probeHeight > area.Height && !anyCellNotDone )
                     {
                         isEmpty = true;
                         break;
@@ -418,33 +526,12 @@ namespace MigraDoc.Rendering
 
                     startingHeight = probeHeight;
                 }
-                //if ( anyTableNotDone )
-                //{
-                //    var pt = processedTables.FirstOrDefault( p => p.Key == mergedCells.GetRowCells( probeRow ).First() && !p.Value.Done ).Value;
-                //    var tRenderer = Create( gfx, documentRenderer, pt.table, null ) as TableRenderer;
-                //    tRenderer.Format( new Rectangle( 0, 0, area.Width, double.MaxValue ), null );
-                //    if ( pt.lastRow > 0 )
-                //    {
-                //        XUnit h = 0;
-                //        for ( int innerTableRow = pt.lastRow; innerTableRow < pt.table.Rows.Count; innerTableRow++ )
-                //        {
-                //            var cells = tRenderer.formattedCells.Where( c => c.Key.Row.Index == innerTableRow ).Select( c => c.Value ).ToList();
-                //            var maxCell = cells.Max( c => c.ContentHeight.Point );
-                //            h += maxCell;
-                //        }
-                //        probeHeight = Math.Max( probeHeight, h );
-                //    }
-                //    else
-                //    {
-                //        probeHeight = Math.Max( probeHeight, tRenderer.RenderInfo.LayoutInfo.ContentArea.Height );
-                //    }
-                //}
-                if ( probeHeight > area.Height /*|| anyTableNotDone */)
+                if ( probeHeight > area.Height || anyCellNotDone )
                 {
-                    if ( !anyTableNotDone && previousFormatInfo != null )
+                    if ( anyCellNotDone /*&& previousFormatInfo != null */)
                     {
                         XUnit maxRowHeight = formattedCells.Where( fc => fc.Key.Row.Index == probeRow ).Max( fc => fc.Value.InnerHeight.Point );
-                        if ( maxRowHeight < probeHeight && maxRowHeight < area.Height )
+                        if ( maxRowHeight < area.Height )
                         {
                             currRow = probeRow;
                             currentHeight = maxRowHeight;
@@ -453,78 +540,16 @@ namespace MigraDoc.Rendering
                         }
                     }
                     break;
-                    //var tableFound = false;
-                    //var tableFits = false;
-                    //foreach ( Cell rowCell in mergedCells.GetRowCells( probeRow ) )
-                    //{
-                    //    if ( processedTables.ContainsKey( rowCell ) )
-                    //    {
-                    //        var pt = processedTables[ rowCell ];
-                    //        if ( !pt.Done )
-                    //        {
-                    //            tableFound = true;
-                    //            var tRenderer = Create( gfx, documentRenderer, pt.table, null ) as TableRenderer;
-                    //            tRenderer.Format( new Rectangle( 0, 0, area.Width, double.MaxValue ), null );
-                    //            var tHeight = tRenderer.RenderInfo.LayoutInfo.ContentArea.Height;
-                    //            if ( pt.lastRow == 0 && tHeight <= area.Height )
-                    //            {
-                    //                currentHeight = tHeight;
-                    //                pt.lastRow = pt.table.Rows.Count;
-                    //                processedTables[ rowCell ] = pt;
-                    //                tableFits = true;
-                    //                break;
-                    //            }
-                    //            else
-                    //            {
-                    //                currentHeight = 0;
-                    //                for ( int innerTableRow = pt.lastRow; innerTableRow < pt.table.Rows.Count; innerTableRow++ )
-                    //                {
-                    //                    var cells = tRenderer.formattedCells.Where( c => c.Key.Row.Index == innerTableRow ).Select( c => c.Value ).ToList();
-                    //                    var maxCell = cells.Max( c => c.ContentHeight.Point );
-                    //                    if ( currentHeight + maxCell <= area.Height )
-                    //                        currentHeight += maxCell;
-                    //                    else
-                    //                    {
-                    //                        pt.lastRow--;
-                    //                        break;
-                    //                    }
-
-                    //                    pt.lastRow = innerTableRow;
-                    //                }
-
-                    //                tableFits = pt.Done;
-                    //                processedTables[ rowCell ] = pt;
-                    //                break;
-                    //            }
-                    //        }
-                    //    }
-                    //    if ( tableFound )
-                    //        break;
-                    //}
-                    //if ( !tableFound || !tableFits )
-                    //    break;
-                    //else if ( tableFits )
-                    //    currRow = probeRow++;
-                    //else
-                    //    break;
                 }
                 else
                 {
-                    if ( anyTableNotDone )
+                    if ( previousFormatInfo != null )
                     {
-                        //Obviamente esta/s tabla/s entra/n
-                        foreach ( Cell rowCell in mergedCells.GetRowCells( probeRow ) )
-                        {
-                            if ( processedTables.ContainsKey( rowCell ) )
-                            {
-                                var pt = processedTables[ rowCell ];
-                                var tRenderer = Create( gfx, documentRenderer, pt.table, null ) as TableRenderer;
-                                tRenderer.Format( new Rectangle( 0, 0, area.Width, probeHeight ), null );
-                                var tHeight = tRenderer.RenderInfo.LayoutInfo.ContentArea.Height;
-                                probeHeight = Math.Min( tHeight, probeHeight );
-                                processedTables[ rowCell ].lastRow = processedTables[ rowCell ].table.Rows.Count;
-                            }
-                        }
+                        XUnit maxRowHeight = formattedCells.Where( fc => fc.Key.Row.Index == probeRow ).Max( fc => fc.Value.InnerHeight.Point );
+                        //if ( maxRowHeight < probeHeight && maxRowHeight < area.Height )
+                        //{
+                        //    probeHeight = maxRowHeight;
+                        //}
                     }
                     currRow = probeRow;
                     currentHeight = probeHeight;
@@ -539,10 +564,6 @@ namespace MigraDoc.Rendering
                 formatInfo.startRow = startRow;
                 formatInfo.isEnding = ( currRow >= table.Rows.Count - 1 );// && ( processedTables == null || ( processedTables.Count == 0 || processedTables.All( pt => pt.Value.Done ) ) );
                 formatInfo.endRow = currRow;
-                if ( formatInfo.isEnding && formattedCells.Any( fc => !fc.Value.Done ) )
-                {
-                    formatInfo.isEnding = false;
-                }
             }
             FinishLayoutInfo( area, currentHeight, startingHeight );
         }
@@ -565,52 +586,23 @@ namespace MigraDoc.Rendering
                 layoutInfo.ContentArea.Width = width;
             }
             layoutInfo.MinWidth = layoutInfo.ContentArea.Width;
-            //var oldInfos = ( ( TableFormatInfo ) renderInfo.FormatInfo ).cellRenderInfos;
-            //( ( TableFormatInfo ) renderInfo.FormatInfo ).cellRenderInfos = new Dictionary<Cell, IEnumerable<RenderInfo>>();
-            //XUnit acu = 0;
-            foreach ( var cell in formattedCells.Where( fc => fc.Key.Row.Index >= formatInfo.startRow && fc.Key.Row.Index <= formatInfo.endRow ) )
-            {
-                //var cellInfos = cell.Value.GetRenderInfos();
-                ( ( TableFormatInfo ) renderInfo.FormatInfo ).cellRenderInfos[ cell.Key ] = cell.Value.GetRenderInfos();
-                continue;
-                //var total = cellInfos.Sum( r => r.LayoutInfo.ContentArea.Height.Point );
 
-                //if ( !oldInfos.ContainsKey( cell.Key ) )
-                //{
-                //    if ( acu <= area.Height )
-                //    {
-                //        ( ( TableFormatInfo ) renderInfo.FormatInfo ).cellRenderInfos[ cell.Key ] = cellInfos;
-                //    }
-                //    else
-                //    {
-                //        var rInfos = new List<RenderInfo>();
-                //        foreach ( var ri in cellInfos )
-                //        {
-                //            if ( acu + rInfos.Sum( r => r.LayoutInfo.ContentArea.Height.Point ) + ri.LayoutInfo.ContentArea.Height.Point <= area.Height )
-                //            {
-                //                rInfos.Add( ri );
-                //            }
-                //        }
-                //        ( ( TableFormatInfo ) renderInfo.FormatInfo ).cellRenderInfos[ cell.Key ] = rInfos.ToList();
-                //    }
-                //}
-                //else
-                //{
-                //    var existing = oldInfos[ cell.Key ].ToList();
-                //    total += existing.Sum( r => r.LayoutInfo.ContentArea.Height.Point );
-                //    foreach ( var ri in cellInfos )
-                //    {
-                //        if ( !existing.Contains( ri ) )
-                //        {
-                //            if ( total + ri.LayoutInfo.ContentArea.Height.Point < area.Height )
-                //                existing.Add( ri );
-                //        }
-                //    }
-                //    ( ( TableFormatInfo ) renderInfo.FormatInfo ).cellRenderInfos[ cell.Key ] = existing.ToList();
-                //}
-                //oldInfos = ( ( TableFormatInfo ) renderInfo.FormatInfo ).cellRenderInfos;
-                //formattedCells[ cell.Key ].ClearRenderInfos();
-                //acu += cellInfos.Sum( c => c.LayoutInfo.ContentArea.Height.Point );
+            //if ( startRow >= 0 && endRow >= 0 )
+            {
+                foreach ( var cell in formattedCells.Where( fc => fc.Key.Row.Index >= formatInfo.startRow && fc.Key.Row.Index <= formatInfo.endRow ) )
+                {
+                    //( ( TableFormatInfo ) renderInfo.FormatInfo ).cellRenderInfos[ cell.Key ] = cell.Value.GetRenderInfos();
+                    if ( ( ( TableFormatInfo ) renderInfo.FormatInfo ).cellRenderInfos.ContainsKey( cell.Key ) )
+                    {
+                        var existing = ( ( TableFormatInfo ) renderInfo.FormatInfo ).cellRenderInfos[ cell.Key ].ToList();
+                        existing.AddRange( cell.Value.GetRenderInfos() );
+                        ( ( TableFormatInfo ) renderInfo.FormatInfo ).cellRenderInfos[ cell.Key ] = existing.ToArray();
+                    }
+                    else
+                    {
+                        ( ( TableFormatInfo ) renderInfo.FormatInfo ).cellRenderInfos[ cell.Key ] = cell.Value.GetRenderInfos();
+                    }
+                }
             }
 
             if ( !table.Rows.LeftIndent.IsEmpty )
@@ -753,8 +745,10 @@ namespace MigraDoc.Rendering
         void CreateBottomBorderMap()
         {
             bottomBorderMap = new SortedList();
+            //if ( startRow == 0 )
             bottomBorderMap.Add( 0, XUnit.FromPoint( 0 ) );
-            while ( !bottomBorderMap.ContainsKey( table.Rows.Count ) )
+
+            while ( !bottomBorderMap.ContainsKey( endRow >= 0 ? endRow + 1 : table.Rows.Count ) )
             {
                 CreateNextBottomBorderPosition();
             }
@@ -802,8 +796,6 @@ namespace MigraDoc.Rendering
                     XUnit bottomBorderPos = topBorderPos + formattedCell.InnerHeight;
                     bottomBorderPos += CalcBottomBorderWidth( cell );
                     maxBottomBorderPosition = Math.Max( maxBottomBorderPosition, bottomBorderPos );
-                    //if ( bottomBorderPos > maxBottomBorderPosition )
-                    //    maxBottomBorderPosition = bottomBorderPos;
                 }
 
             bottomBorderMap.Add( minMergedCell.Row.Index + minMergedCell.MergeDown + 1, maxBottomBorderPosition );
@@ -860,19 +852,6 @@ namespace MigraDoc.Rendering
         int CalcLastConnectedRow( int row )
         {
             return mergedCells.CalcLastConnectedRow( row );
-            // AndrewT: moved to MergedCells
-            //int lastConnectedRow = row;
-            //foreach (Cell cell in this.mergedCells)
-            //{
-            //  if (cell.Row.Index <= lastConnectedRow)
-            //  {
-            //    int downConnection = Math.Max(cell.Row.KeepWith, cell.MergeDown);
-            //    if (lastConnectedRow < cell.Row.Index + downConnection)
-            //      lastConnectedRow = cell.Row.Index + downConnection;
-            //  }
-            //}
-
-            //return lastConnectedRow;
         }
 
         /// <summary>
@@ -883,18 +862,6 @@ namespace MigraDoc.Rendering
         int CalcLastConnectedColumn( int column )
         {
             return mergedCells.CalcLastConnectedColumn( column );
-            // AndrewT: moved to MergedCells
-            //int lastConnectedColumn = column;
-            //foreach (Cell cell in this.mergedCells)
-            //{
-            //  if (cell.Column.Index <= lastConnectedColumn)
-            //  {
-            //    int rightConnection = Math.Max(cell.Column.KeepWith, cell.MergeRight);
-            //    if (lastConnectedColumn < cell.Column.Index + rightConnection)
-            //      lastConnectedColumn = cell.Column.Index + rightConnection;
-            //  }
-            //}
-            //return lastConnectedColumn;
         }
 
 

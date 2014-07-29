@@ -34,25 +34,36 @@ using MigraDoc.DocumentObjectModel.Tables;
 
 namespace MigraDoc.Rendering
 {
-  /// <summary>
-  /// Rendering information for tables.
-  /// </summary>
-  internal class TableRenderInfo : RenderInfo
-  {
-    internal TableRenderInfo()
+    /// <summary>
+    /// Rendering information for tables.
+    /// </summary>
+    internal class TableRenderInfo : RenderInfo
     {
-    }
+        internal TableRenderInfo()
+        {
+        }
 
-    internal override FormatInfo FormatInfo
-    {
-      get { return this.formatInfo; }
-    }
-    private TableFormatInfo formatInfo = new TableFormatInfo();
+        internal override FormatInfo FormatInfo
+        {
+            get { return this.formatInfo; }
+        }
+        private TableFormatInfo formatInfo = new TableFormatInfo();
 
-    internal override MigraDoc.DocumentObjectModel.DocumentObject DocumentObject
-    {
-      get { return this.table; }
+        internal override MigraDoc.DocumentObjectModel.DocumentObject DocumentObject
+        {
+            get { return this.table; }
+        }
+        internal override void RemoveEnding()
+        {
+            if ( !formatInfo.IsEmpty )
+            {
+                if ( formatInfo.startRow > 0 )
+                {
+                    //formatInfo.startRow--;
+                }
+                formatInfo.isEnding = false;
+            }
+        }
+        internal Table table;
     }
-    internal Table table;
-  }
 }

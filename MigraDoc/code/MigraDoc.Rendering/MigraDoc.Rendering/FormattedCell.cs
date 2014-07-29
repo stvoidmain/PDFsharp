@@ -49,19 +49,9 @@ namespace MigraDoc.Rendering
             this.fieldInfos = fieldInfos;
             this.yOffset = yOffset;
             this.xOffset = xOffset;
-            this.bordersRenderer = new BordersRenderer( cellBorders, null );
+            bordersRenderer = new BordersRenderer( cellBorders, null );
             this.documentRenderer = documentRenderer;
-
-            foreach ( DocumentObject item in cell.Elements )
-            {
-                if ( item is Table )
-                {
-                    cellTables.Enqueue( item as Table );
-                }
-            }
-            allTablesProcessed = cellTables.Count == tablesProcesed.Count;
-
-            this.renderInfos = new List<RenderInfo>();
+            renderInfos = new List<RenderInfo>();
             Constrain = new Rectangle( xOffset, yOffset, 0, double.MaxValue );
         }
 
@@ -75,70 +65,66 @@ namespace MigraDoc.Rendering
             set
             {
                 constrain = value;
-                initialRect = CalcContentRect();
+                initialRect = new Rectangle( 0, 0, value.Width, value.Height );
             }
         }
         bool isFirstArea = true;
-        internal List<ProcessedTable> tablesProcesed = new List<ProcessedTable>();
-        Queue<Table> cellTables = new Queue<Table>();
-        Dictionary<Table, Area> areas = new Dictionary<Table, Area>();
-        XUnit accumulatedheight;
-        private Area currentArea;
-        private Area firstArea;
         Area IAreaProvider.GetNextArea()
         {
-            if ( this.isFirstArea )
+            var rect = CalcContentRect();
+            if ( isFirstArea )
             {
-                accumulatedheight = 0;
-                tablesProcesed = new List<ProcessedTable>();
-                areas = new Dictionary<Table, Area>();
-                Rectangle rect = CalcContentRect();
-                this.isFirstArea = false;
-                currentArea = firstArea = rect;
+                isFirstArea = false;
                 return rect;
             }
-            if ( isReFormat )
+            else if ( isReFormat )
             {
-                isReFormat = false;// One pass?
-                return !Done ? CalcContentRect() : null;
+                isReFormat = false;
+                return rect;
             }
             return null;
-        }
-        private bool allTablesProcessed = false;
-
-        internal Area GetNestedTableArea( Table t )
-        {
-            return areas.ContainsKey( t ) ? areas[ t ] : null;
         }
 
         Area IAreaProvider.ProbeNextArea()
         {
-            return null;
+            //if ( renderInfos.Count > 0 )
+            //{
+            //    var ch = CalcContentHeight( documentRenderer );
+            //    var low = Constrain.Lower( ch );
+            //    if ( low.Height > 0 )
+            //    {
+            //        return new Rectangle( xOffset, yOffset, 0, low.Height );
+            //    }
+            //}
+            return null;// new Rectangle( xOffset, yOffset, 0, Constrain.Height );
         }
 
         private int lastIndex;
 
         internal void Format( XGraphics gfx )
         {
-            if ( !Done && lastIndex > 0 && lastIndex == cell.Elements.Count )
-            {
-                lastIndex--;
-            }
-            if ( lastRenderInfo != null )
-            {
-                var obByIndex = cell.Elements[ lastIndex ];
-                if ( lastRenderInfo.DocumentObject != obByIndex )
-                {
-                    lastRenderInfo = null;
-                }
-            }
+            var isRe = isReFormat;
             this.gfx = gfx;
-            this.formatter = new TopDownFormatter( this, this.documentRenderer, this.cell.Elements );
-            this.formatter.FormatOnAreas( gfx, false, lastIndex, lastRenderInfo != null ? lastRenderInfo.FormatInfo : null );
-            this.contentHeight = CalcContentHeight( this.documentRenderer );
-            Done = formatter.LastIndex >= cell.Elements.Count && formatter.LastRenderInfo == null && InnerHeight <= Constrain.Height;
+            formatter = new TopDownFormatter( this, documentRenderer, cell.Elements );
+            formatter.FormatOnAreas( gfx, false, lastIndex, lastRenderInfo );
+            contentHeight = CalcContentHeight( documentRenderer );
+            Done = formatter.LastIndex >= cell.Elements.Count && formatter.LastPrevRenderInfo == null && contentHeight < Constrain.Height;
             lastIndex = formatter.LastIndex;
-            lastRenderInfo = formatter.LastRenderInfo;
+            lastRenderInfo = formatter.LastPrevRenderInfo;
+            if ( !isRe )
+            {
+                lastIndex = 0;
+                lastRenderInfo = null;
+                //renderInfos.Clear();
+            }
+        }
+
+        private FormatInfo LastFormatInfo
+        {
+            get
+            {
+                return lastRenderInfo != null ? lastRenderInfo.FormatInfo : null;
+            }
         }
 
         private bool isReFormat;
@@ -148,34 +134,67 @@ namespace MigraDoc.Rendering
             {
                 return;
             }
+            if ( lastIndex > 0 && lastIndex == cell.Elements.Count )
+            {
+                lastIndex--;
+            }
+            //var obByIndex = cell.Elements[ lastIndex ];
+            //if ( lastRenderInfo != null )
+            //{
+            //    if ( lastRenderInfo.DocumentObject != obByIndex )
+            //    {
+            //        lastRenderInfo = null;
+            //        foreach ( var ri in renderInfos )
+            //        {
+            //            if ( ri.DocumentObject == obByIndex )
+            //            {
+            //                lastRenderInfo = ri;
+            //            }
+            //        }
+            //    }
+            //}
+            //else
+            //{
+            //    foreach ( var ri in renderInfos )
+            //    {
+            //        if ( ri.DocumentObject == obByIndex && !ri.FormatInfo.IsComplete )
+            //        {
+            //            lastRenderInfo = ri;
+            //        }
+            //    }
+            //}
+            //if ( lastRenderInfo != null && ( lastRenderInfo.FormatInfo.IsComplete || lastRenderInfo.FormatInfo.IsEmpty ) )
+            //{
+            //    lastRenderInfo = null;
+            //}
+            renderInfos = new List<RenderInfo>();
             isReFormat = true;
-            this.renderInfos = new List<RenderInfo>();
             Format( gfx );
             isReFormat = false;
         }
 
         private Rectangle CalcContentRect()
         {
-            Column column = this.cell.Column;
+            Column column = cell.Column;
             XUnit width = InnerWidth;
             width -= column.LeftPadding.Point;
-            Column rightColumn = this.cell.Table.Columns[ column.Index + this.cell.MergeRight ];
+            Column rightColumn = cell.Table.Columns[ column.Index + cell.MergeRight ];
             width -= rightColumn.RightPadding.Point;
 
             XUnit height = double.MaxValue;// isFirstArea ? Constrain.Height.Point : double.MaxValue;
-            return new Rectangle( this.xOffset, this.yOffset, width, Constrain.Height.Point );
+            return new Rectangle( xOffset, yOffset, width, Constrain.Height.Point );
         }
 
         internal XUnit ContentHeight
         {
-            get { return this.contentHeight; }
+            get { return contentHeight; }
         }
 
         internal XUnit InnerHeight
         {
             get
             {
-                Row row = this.cell.Row;
+                Row row = cell.Row;
                 XUnit verticalPadding = row.TopPadding.Point;
                 verticalPadding += row.BottomPadding.Point;
                 switch ( row.HeightRule )
@@ -184,12 +203,12 @@ namespace MigraDoc.Rendering
                         return row.Height.Point;
 
                     case RowHeightRule.Auto:
-                        return verticalPadding + this.contentHeight;
+                        return verticalPadding + contentHeight;
 
                     case RowHeightRule.AtLeast:
                     default:
-                        //return Math.Max( row.Height, verticalPadding + this.contentHeight );
-                        return Math.Max( row.Height, Math.Min( Constrain.Height, verticalPadding + this.contentHeight ) );
+                        return Math.Max( row.Height, verticalPadding + contentHeight );
+                        //return Math.Max( row.Height, Math.Min( Constrain.Height, verticalPadding + this.contentHeight ) );
                 }
             }
         }
@@ -199,13 +218,13 @@ namespace MigraDoc.Rendering
             get
             {
                 XUnit width = 0;
-                int cellColumnIdx = this.cell.Column.Index;
-                for ( int toRight = 0; toRight <= this.cell.MergeRight; ++toRight )
+                int cellColumnIdx = cell.Column.Index;
+                for ( int toRight = 0; toRight <= cell.MergeRight; ++toRight )
                 {
                     int columnIdx = cellColumnIdx + toRight;
-                    width += this.cell.Table.Columns[ columnIdx ].Width;
+                    width += cell.Table.Columns[ columnIdx ].Width;
                 }
-                width -= this.bordersRenderer.GetWidth( BorderType.Right );
+                width -= bordersRenderer.GetWidth( BorderType.Right );
 
                 return width;
             }
@@ -215,7 +234,7 @@ namespace MigraDoc.Rendering
         {
             get
             {
-                return this.fieldInfos;
+                return fieldInfos;
             }
         }
 
@@ -226,16 +245,9 @@ namespace MigraDoc.Rendering
 
         internal void StoreRenderInfos( IEnumerable<RenderInfo> renderInfos, bool overwrite = false )
         {
-            if ( renderInfos != null && renderInfos.First() is TableRenderInfo )
-            {
-                var tri = renderInfos.First() as TableRenderInfo;
-                var fri = tri.FormatInfo as TableFormatInfo;
-                System.Diagnostics.Debug.WriteLine( "StoreRenderInfos: {0}", fri );
-            }
             if ( overwrite )
             {
                 this.renderInfos = new List<RenderInfo>( renderInfos );
-                //lastRenderInfo = this.renderInfos != null && this.renderInfos.Count > 0 ? this.renderInfos.Last() : null;
                 return;
             }
             if ( renderInfos != null )
@@ -248,6 +260,16 @@ namespace MigraDoc.Rendering
                     }
                 }
             }
+#if DEBUG
+            if ( this.renderInfos != null && this.renderInfos.Any( r => r is TableRenderInfo ) )
+            {
+                foreach ( var tri in this.renderInfos.Where( r => r is TableRenderInfo ).Cast<TableRenderInfo>() )
+                {
+                    var fri = tri.FormatInfo as TableFormatInfo;
+                    System.Diagnostics.Debug.WriteLine( "FormattedCell -> StoreRenderInfos: {0}", fri );
+                }
+            }
+#endif
         }
 
         bool IAreaProvider.IsAreaBreakBefore( LayoutInfo layoutInfo )
@@ -270,9 +292,9 @@ namespace MigraDoc.Rendering
             XUnit height = RenderInfo.GetTotalHeight( GetRenderInfos() );
             if ( height == 0 )
             {
-                height = ParagraphRenderer.GetLineHeight( this.cell.Format, this.gfx, documentRenderer );
-                height += this.cell.Format.SpaceBefore;
-                height += this.cell.Format.SpaceAfter;
+                height = ParagraphRenderer.GetLineHeight( cell.Format, gfx, documentRenderer );
+                height += cell.Format.SpaceBefore;
+                height += cell.Format.SpaceAfter;
             }
             return height;
         }
@@ -293,7 +315,7 @@ namespace MigraDoc.Rendering
             {
                 return;
             }
-            lastRenderInfo = renderInfos != null && renderInfos.Count > 0 ? renderInfos.Last() : null;
+            //lastRenderInfo = renderInfos != null && renderInfos.Count > 0 ? renderInfos.Last() : null;
             renderInfos.Clear();
         }
 
