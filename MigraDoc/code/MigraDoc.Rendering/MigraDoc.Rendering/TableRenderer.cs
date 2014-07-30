@@ -198,7 +198,7 @@ namespace MigraDoc.Rendering
 
         Rectangle GetInnerRect( XUnit startingHeight, Cell cell )
         {
-            //BordersRenderer bordersRenderer = new BordersRenderer( mergedCells.GetEffectiveBorders( cell ), gfx );
+            BordersRenderer bordersRenderer = new BordersRenderer( mergedCells.GetEffectiveBorders( cell ), gfx );
             FormattedCell formattedCell = formattedCells[ cell ];
             XUnit width = formattedCell.InnerWidth;
 
@@ -217,10 +217,10 @@ namespace MigraDoc.Rendering
             XUnit lowerBorderPos = ( XUnit ) bottomBorderMap[ cell.Row.Index + cell.MergeDown + 1 ];
 
 
-            //XUnit height = lowerBorderPos - upperBorderPos;
-            //height -= bordersRenderer.GetWidth( BorderType.Bottom );
-            XUnit height = formattedCell.InnerHeight;
-
+            XUnit height = lowerBorderPos - upperBorderPos;
+            height -= bordersRenderer.GetWidth( BorderType.Bottom );
+            //XUnit height = formattedCells.Where( fc => fc.Key.Row.Index == cell.Row.Index ).Max( fc => fc.Value.InnerHeight.Point );
+            //height += bordersRenderer.GetWidth( BorderType.Bottom );
 
             XUnit x = startX;
             for ( int clmIdx = 0; clmIdx < cell.Column.Index; ++clmIdx )
@@ -235,10 +235,6 @@ namespace MigraDoc.Rendering
         internal override void Render()
         {
             InitRendering();
-            if ( lastRenderedRow >= endRow )
-            {
-                //return;
-            }
             if ( startRow >= table.Rows.Count )
             {
                 return;
@@ -287,7 +283,6 @@ namespace MigraDoc.Rendering
                 {
                     //FormatCells( area, true );
                 }
-                processedTables = prevTableFormatInfo.processedTables;
                 //cellRenderInfos = prevTableFormatInfo.cellRenderInfos;
                 bottomBorderMap = prevTableFormatInfo.bottomBorderMap;
                 lastHeaderRow = prevTableFormatInfo.lastHeaderRow;
@@ -310,7 +305,6 @@ namespace MigraDoc.Rendering
             }
             ( ( TableFormatInfo ) tblRenderInfo.FormatInfo ).mergedCells = mergedCells;
             ( ( TableFormatInfo ) tblRenderInfo.FormatInfo ).formattedCells = formattedCells;
-            ( ( TableFormatInfo ) tblRenderInfo.FormatInfo ).processedTables = processedTables;
             ( ( TableFormatInfo ) tblRenderInfo.FormatInfo ).cellRenderInfos = cellRenderInfos;
             ( ( TableFormatInfo ) tblRenderInfo.FormatInfo ).bottomBorderMap = bottomBorderMap;
             ( ( TableFormatInfo ) tblRenderInfo.FormatInfo ).connectedRowsMap = connectedRowsMap;
@@ -373,7 +367,7 @@ namespace MigraDoc.Rendering
                     formattedCells[ cell ].ReFormat( gfx );
                 }
             }
-            return formattedCells.Where( fc => fc.Key.Row.Index == row ).Max( fc => GetInnerRect( 0, fc.Key ).Height.Point );
+            return formattedCells.Where( fc => fc.Key.Row.Index == row ).Max( fc => fc.Value.InnerHeight.Point );
         }
 
         internal override void Format( Area area, FormatInfo previousFormatInfo )
@@ -419,7 +413,7 @@ namespace MigraDoc.Rendering
 
                 if ( startingHeight == 0 )
                 {
-                    if ( probeHeight > area.Height && anyCellNotDoneThisRow )
+                    if ( probeHeight > area.Height && ( anyCellNotDoneThisRow || ( !anyCellNotDone && !anyCellNotDoneThisRow ) ) )
                     {
                         isEmpty = true;
                         break;
@@ -442,9 +436,8 @@ namespace MigraDoc.Rendering
             if ( !isEmpty )
             {
                 TableFormatInfo formatInfo = ( TableFormatInfo ) renderInfo.FormatInfo;
-                formatInfo.processedTables = processedTables;
                 formatInfo.startRow = startRow;
-                formatInfo.isEnding = currRow >= table.Rows.Count - 1;// && formattedCells.All( fc => fc.Value.Done );
+                formatInfo.isEnding = currRow >= table.Rows.Count - 1;
                 formatInfo.endRow = currRow;
 
                 CreateBottomBorderMap();
@@ -560,7 +553,6 @@ namespace MigraDoc.Rendering
             if ( !isEmpty )
             {
                 TableFormatInfo formatInfo = ( TableFormatInfo ) renderInfo.FormatInfo;
-                formatInfo.processedTables = processedTables;
                 formatInfo.startRow = startRow;
                 formatInfo.isEnding = ( currRow >= table.Rows.Count - 1 );// && ( processedTables == null || ( processedTables.Count == 0 || processedTables.All( pt => pt.Value.Done ) ) );
                 formatInfo.endRow = currRow;
@@ -869,7 +861,6 @@ namespace MigraDoc.Rendering
         Table table;
         MergedCellList mergedCells;
         internal Dictionary<Cell, FormattedCell> formattedCells;
-        internal Dictionary<Cell, ProcessedTable> processedTables;
         internal Dictionary<Cell, IEnumerable<RenderInfo>> cellRenderInfos;
         SortedList bottomBorderMap;
         SortedList connectedRowsMap;

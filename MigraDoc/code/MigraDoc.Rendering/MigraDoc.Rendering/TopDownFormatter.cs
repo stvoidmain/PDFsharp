@@ -198,13 +198,18 @@ namespace MigraDoc.Rendering
                     if ( renderer.RenderInfo.FormatInfo.IsEmpty && isFirstOnPage )
                     {
                         //LastPrevRenderInfo = renderer.RenderInfo;
-                        area = this.areaProvider.GetNextArea();
-                        if ( area != null )
+                        //area = this.areaProvider.GetNextArea();
+                        //if ( area != null )
                         {
-                            //var h = docObj.Section.PageSetup.PageHeight.Point;
-                            //h -= docObj.Section.PageSetup.TopMargin.Point;
-                            //h -= docObj.Section.PageSetup.BottomMargin.Point;
-                            //area = area.Unite( new Rectangle( area.X, area.Y, area.Width, h ) );
+                            var h = docObj.Section.PageSetup.PageHeight.Point;
+                            h -= docObj.Section.PageSetup.TopMargin.Point;
+                            h -= docObj.Section.PageSetup.BottomMargin.Point;
+                            h = Math.Max( 0, h );
+                            if ( h == 0 )
+                            {
+                                h = double.MaxValue;
+                            }
+                            area = area.Unite( new Rectangle( area.X, area.Y, area.Width, Math.Max( renderer.RenderInfo.LayoutInfo.ContentArea.Height.Point, h ) ) );
 
                             renderer = Renderer.Create( gfx, this.documentRenderer, docObj, this.areaProvider.AreaFieldInfos );
                             renderer.MaxElementHeight = area.Height;
@@ -221,7 +226,7 @@ namespace MigraDoc.Rendering
                             ++idx;
                         }
                     }
-                    if ( area != null )
+                    //if ( area != null )
                     {
                         prevRenderInfo = FinishPage( renderer.RenderInfo, pagebreakBefore, ref renderInfos );
                         if ( prevRenderInfo != null )

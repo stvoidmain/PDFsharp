@@ -102,52 +102,10 @@ namespace MigraDoc.Rendering
 
         internal int lastHeaderRow = -1;
         internal Dictionary<Cell, FormattedCell> formattedCells;
-        internal Dictionary<Cell, ProcessedTable> processedTables;
         internal Dictionary<Cell, IEnumerable<RenderInfo>> cellRenderInfos;
         internal MergedCellList mergedCells;
         internal SortedList bottomBorderMap;
         internal SortedList connectedRowsMap;
         internal int lastRenderedRow = -1;
-    }
-
-    internal class ProcessedElement
-    {
-        private DocumentObject element;
-        public ProcessedElement( DocumentObject obj )
-        {
-            element = obj;
-        }
-
-        public virtual DocumentObject Element
-        {
-            get
-            {
-                return element;
-            }
-            set
-            {
-                element = value;
-            }
-        }
-
-        internal virtual bool Done { get; set; }
-    }
-
-    internal class ProcessedTable : ProcessedElement
-    {
-        public ProcessedTable( Table t ) : base( t )
-        {
-            table = t;
-        }
-        internal Table table;
-        internal int lastRow;
-        internal override bool Done
-        {
-            get
-            {
-                return lastRow >= table.Rows.Count - 1;
-            }
-            set {; }
-        }
     }
 }
