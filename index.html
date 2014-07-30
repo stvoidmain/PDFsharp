@@ -1,0 +1,136 @@
+<!doctype html>
+<!-- The Time Machine GitHub pages theme was designed and developed by Jon Rohan, on Feb 7, 2012. -->
+<!-- Follow him for fun. http://twitter.com/jonrohan. Tail his code on http://github.com/jonrohan -->
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+
+  <link rel="stylesheet" href="stylesheets/stylesheet.css" media="screen">
+  <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+  <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+  <script type="text/javascript" src="javascripts/script.js"></script>
+
+  <title>Pdfsharp</title>
+  <meta name="description" content="Improved PDFsharp and Migradoc">
+
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+
+</head>
+
+<body>
+
+  <div class="wrapper">
+    <header>
+      <h1 class="title">Pdfsharp</h1>
+    </header>
+    <div id="container">
+      <p class="tagline">Improved PDFsharp and Migradoc</p>
+      <div id="main" role="main">
+        <div class="download-bar">
+        <div class="inner">
+          <a href="https://github.com/stvoidmain/PDFsharp/tarball/master" class="download-button tar"><span>Download</span></a>
+          <a href="https://github.com/stvoidmain/PDFsharp/zipball/master" class="download-button zip"><span>Download</span></a>
+          <a href="https://github.com/stvoidmain/PDFsharp" class="code">View Pdfsharp on GitHub</a>
+        </div>
+        <span class="blc"></span><span class="trc"></span>
+        </div>
+        <article class="markdown-body">
+          <p>This is a forked version of PdfSharp and Migradoc in an attempt to add some missing functionality.</p>
+
+<ul>
+<li>Tables row splitting (most needed on nested tables) * Done</li>
+<li>Barcode rendering in Migradoc * Done</li>
+<li>Add images from a stream * Partial (only MemoryStream but will add support for byte[] and generic streams)</li>
+</ul><h1>
+<a name="welcome-to-pdfsharp-and-migradoc-foundation" class="anchor" href="#welcome-to-pdfsharp-and-migradoc-foundation"><span class="octicon octicon-link"></span></a>Welcome to PDFsharp and MigraDoc Foundation</h1>
+
+<h2>
+<a name="pdfsharp--migradoc-foundation-support-forum" class="anchor" href="#pdfsharp--migradoc-foundation-support-forum"><span class="octicon octicon-link"></span></a>PDFsharp &amp; MigraDoc Foundation Support Forum</h2>
+
+<p>The right place to search for answers and to ask new questions:
+<a href="http://forum.pdfsharp.net/">http://forum.pdfsharp.net/</a></p>
+
+<h2>
+<a name="the-pdfsharp--migradoc-web-site" class="anchor" href="#the-pdfsharp--migradoc-web-site"><span class="octicon octicon-link"></span></a>The PDFsharp &amp; MigraDoc Web Site</h2>
+
+<p>Here's the homepage:
+<a href="http://www.pdfsharp.net/">http://www.pdfsharp.net/</a></p>
+
+<p>Here's the PDFsharp &amp; MigraDoc Wiki:
+<a href="http://www.pdfsharp.net/wiki/">http://www.pdfsharp.net/wiki/</a></p>
+
+<p>Please note: the Wiki introduces many of the PDFsharp and MigraDoc samples with screen shots, code snippets, generated PDF files, etc.</p>
+
+<h2>
+<a name="current-downloads" class="anchor" href="#current-downloads"><span class="octicon octicon-link"></span></a>Current Downloads</h2>
+
+<p>Visit the homepage and click on Downloads.</p>
+
+<p>You'll find the latest versions on CodePlex:
+<a href="http://pdfsharp.codeplex.com/Release/ProjectReleases.aspx">http://pdfsharp.codeplex.com/Release/ProjectReleases.aspx</a></p>
+
+<p>And on SourceForge:
+<a href="http://sourceforge.net/projects/pdfsharp">http://sourceforge.net/projects/pdfsharp</a></p>
+
+<h2>
+<a name="available-packages" class="anchor" href="#available-packages"><span class="octicon octicon-link"></span></a>Available Packages</h2>
+
+<p>PDFSharp-MigraDocFoundation-1_32.zip: the complete source code (recommended if you're using Visual Studio 2010) 
+PDFsharp-MigraDocFoundation-Assemblies-1_32.zip: the compiled assemblies (for those who don't use Visual Studio 2010) </p>
+
+<p>Visit CodePlex for further information:
+<a href="http://pdfsharp.codeplex.com/Release/ProjectReleases.aspx">http://pdfsharp.codeplex.com/Release/ProjectReleases.aspx</a></p>
+
+<h2>
+<a name="whats-new-in-pdfsharp--migradoc-foundation-132" class="anchor" href="#whats-new-in-pdfsharp--migradoc-foundation-132"><span class="octicon octicon-link"></span></a>What's New in PDFsharp &amp; MigraDoc Foundation 1.32</h2>
+
+<p>Version 1.32 contains some minor bug fixes.
+Version 1.32 includes solutions for Visual Studio 2010.
+If you need solutions for VS 2005 or VS 2008, download version 1.31.</p>
+
+<h2>
+<a name="whats-new-in-pdfsharp--migradoc-foundation-131" class="anchor" href="#whats-new-in-pdfsharp--migradoc-foundation-131"><span class="octicon octicon-link"></span></a>What's New in PDFsharp &amp; MigraDoc Foundation 1.31</h2>
+
+<p>Version 1.31 contains some minor bug fixes.
+Image compression was improved:</p>
+
+<ul>
+<li>Bitonal images are now compressed using CCITT Fax encoding</li>
+<li>Bitonal images are still FlateEncoded if compression ratio is better</li>
+<li>JPEG images are now FlateEncoded if that reduces size</li>
+<li>Non-JPEG grayscale image are now stored without color palette</li>
+<li>Color paletters are now FlateEncoded</li>
+</ul><p>Bitonal images: only images with a two-color palette are
+treated as bitonal images; save images that only contain black and
+white in a bitonal format (Paint calls it "Monochrome Bitmap")
+to be able to profit from the new CCITT Fax compression.</p>
+
+<p>Please note: if you favor small PDF files, go for version 1.31.
+If you favor fast PDF generation, stay with version 1.30.
+One of the forthcoming versions will allow you to configure the
+generation of PDF files (something like "Optimize for Size" and
+"Optimize for Speed").</p>
+        </article>
+      </div>
+    </div>
+    <footer>
+      <div class="owner">
+      <p><a href="https://github.com/stvoidmain" class="avatar"><img src="https://avatars1.githubusercontent.com/u/2236408?v=1&amp;s=60" width="48" height="48"></a> <a href="https://github.com/stvoidmain">stvoidmain</a> maintains <a href="https://github.com/stvoidmain/PDFsharp">Pdfsharp</a></p>
+
+
+      </div>
+      <div class="creds">
+        <small>This page generated using <a href="http://pages.github.com/">GitHub Pages</a><br>theme by <a href="https://twitter.com/jonrohan/">Jon Rohan</a></small>
+      </div>
+    </footer>
+  </div>
+  <div class="current-section">
+    <a href="#top">Scroll to top</a>
+    <a href="https://github.com/stvoidmain/PDFsharp/tarball/master" class="tar">tar</a><a href="https://github.com/stvoidmain/PDFsharp/zipball/master" class="zip">zip</a><a href="" class="code">source code</a>
+    <p class="name"></p>
+  </div>
+
+  
+</body>
+</html>
