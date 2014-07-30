@@ -1,3 +1,10 @@
+This is a forked version of PdfSharp and Migradoc in an attempt to add some missing functionality.
+
+- Tables row splitting (most needed on nested tables) * Done
+- Barcode rendering in Migradoc * Done
+- Add images from a stream * Partial (only MemoryStream but will add support for byte[] and generic streams)
+
+
 Welcome to PDFsharp and MigraDoc Foundation
 ===========================================
 
