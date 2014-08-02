@@ -104,6 +104,11 @@ namespace MigraDoc.Rendering
         /// <param name="verticalOffset">The measure of lowering.</param>
         /// <returns>The lowered Area.</returns>
         internal abstract Area Lower( XUnit verticalOffset );
+
+        public override string ToString()
+        {
+            return string.Format( "X: {0}, Y: {1}, Width: {2}, Height: {3}", X, Y, Width, Height );
+        }
     }
 
     [DebuggerDisplay("X: {X}, Y: {Y}, Width: {Width}, Height: {Height}", Name = "Rectangle")]

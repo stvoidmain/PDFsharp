@@ -209,7 +209,7 @@ namespace MigraDoc.Rendering
                             {
                                 h = double.MaxValue;
                             }
-                            area = area.Unite( new Rectangle( area.X, area.Y, area.Width, Math.Max( renderer.RenderInfo.LayoutInfo.ContentArea.Height.Point, h ) ) );
+                            area = area.Unite( new Rectangle( area.X, area.Y, area.Width, h ) );
 
                             renderer = Renderer.Create( gfx, this.documentRenderer, docObj, this.areaProvider.AreaFieldInfos );
                             renderer.MaxElementHeight = area.Height;

@@ -153,7 +153,7 @@ namespace MigraDoc.Rendering
         void RenderContent( Cell cell, Rectangle innerRect )
         {
             FormattedCell formattedCell = formattedCells[ cell ];
-            RenderInfo[] renderInfos = cellRenderInfos[ cell ].ToArray();//formattedCell.GetRenderInfos();//
+            RenderInfo[] renderInfos = cellRenderInfos.ContainsKey( cell ) ? cellRenderInfos[ cell ].ToArray() : formattedCell.GetRenderInfos();//
 
             if ( renderInfos == null )
                 return;
@@ -364,7 +364,7 @@ namespace MigraDoc.Rendering
                 if ( overrideDone || !formattedCells[ cell ].Done )
                 {
                     formattedCells[ cell ].Constrain = area;
-                    formattedCells[ cell ].ReFormat( gfx );
+                    formattedCells[ cell ].ReFormat( gfx, overrideDone );
                 }
             }
             return formattedCells.Where( fc => fc.Key.Row.Index == row ).Max( fc => fc.Value.InnerHeight.Point );
@@ -382,6 +382,7 @@ namespace MigraDoc.Rendering
 
             renderInfo = new TableRenderInfo();
             InitFormat( area, previousFormatInfo );
+            Console.WriteLine( "Starting format - Area: {0}, Pfi: {1}", area, previousFormatInfo );
 
             // Don't take any Rows higher then MaxElementHeight
             XUnit topHeight = CalcStartingHeight();
@@ -409,11 +410,12 @@ namespace MigraDoc.Rendering
                 probeHeight = topHeight;
                 var rowHeight = FormatRowCells( proveArea, probeRow, previousFormatInfo != null );
                 probeHeight += rowHeight;
+                Console.WriteLine( "Total rows: {0}, Row: {1}, Height: {2}, Total: {3}, Avail: {4}", table.Rows.Count, probeRow, probeHeight, currentHeight, proveArea.Height );
                 var anyCellNotDoneThisRow = formattedCells.Any( fc => fc.Key.Row.Index == probeRow && !fc.Value.Done );
 
                 if ( startingHeight == 0 )
                 {
-                    if ( probeHeight > area.Height && ( anyCellNotDoneThisRow || ( !anyCellNotDone && !anyCellNotDoneThisRow ) ) )
+                    if ( probeHeight + currentHeight > area.Height && ( anyCellNotDoneThisRow || ( !anyCellNotDone && !anyCellNotDoneThisRow ) ) )
                     {
                         isEmpty = true;
                         break;
@@ -429,8 +431,8 @@ namespace MigraDoc.Rendering
                     currRow = probeRow;
                     currentHeight += probeHeight;
                     ++probeRow;
-                    proveArea.Height -= rowHeight;
                 }
+                proveArea.Height -= probeHeight;
             }
 
             if ( !isEmpty )
@@ -583,17 +585,17 @@ namespace MigraDoc.Rendering
             {
                 foreach ( var cell in formattedCells.Where( fc => fc.Key.Row.Index >= formatInfo.startRow && fc.Key.Row.Index <= formatInfo.endRow ) )
                 {
-                    //( ( TableFormatInfo ) renderInfo.FormatInfo ).cellRenderInfos[ cell.Key ] = cell.Value.GetRenderInfos();
-                    if ( ( ( TableFormatInfo ) renderInfo.FormatInfo ).cellRenderInfos.ContainsKey( cell.Key ) )
-                    {
-                        var existing = ( ( TableFormatInfo ) renderInfo.FormatInfo ).cellRenderInfos[ cell.Key ].ToList();
-                        existing.AddRange( cell.Value.GetRenderInfos() );
-                        ( ( TableFormatInfo ) renderInfo.FormatInfo ).cellRenderInfos[ cell.Key ] = existing.ToArray();
-                    }
-                    else
-                    {
-                        ( ( TableFormatInfo ) renderInfo.FormatInfo ).cellRenderInfos[ cell.Key ] = cell.Value.GetRenderInfos();
-                    }
+                    ( ( TableFormatInfo ) renderInfo.FormatInfo ).cellRenderInfos[ cell.Key ] = cell.Value.GetRenderInfos();
+                    //if ( ( ( TableFormatInfo ) renderInfo.FormatInfo ).cellRenderInfos.ContainsKey( cell.Key ) )
+                    //{
+                    //    var existing = ( ( TableFormatInfo ) renderInfo.FormatInfo ).cellRenderInfos[ cell.Key ].ToList();
+                    //    existing.AddRange( cell.Value.GetRenderInfos() );
+                    //    ( ( TableFormatInfo ) renderInfo.FormatInfo ).cellRenderInfos[ cell.Key ] = existing.ToArray();
+                    //}
+                    //else
+                    //{
+                    //    ( ( TableFormatInfo ) renderInfo.FormatInfo ).cellRenderInfos[ cell.Key ] = cell.Value.GetRenderInfos();
+                    //}
                 }
             }
 

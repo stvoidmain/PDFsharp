@@ -128,9 +128,9 @@ namespace MigraDoc.Rendering
         }
 
         private bool isReFormat;
-        internal void ReFormat( XGraphics gfx )
+        internal void ReFormat( XGraphics gfx, bool overrideFormat = false )
         {
-            if ( Done )
+            if ( Done && !overrideFormat )
             {
                 return;
             }
@@ -266,7 +266,7 @@ namespace MigraDoc.Rendering
                 foreach ( var tri in this.renderInfos.Where( r => r is TableRenderInfo ).Cast<TableRenderInfo>() )
                 {
                     var fri = tri.FormatInfo as TableFormatInfo;
-                    System.Diagnostics.Debug.WriteLine( "FormattedCell -> StoreRenderInfos: {0}", fri );
+                    Console.WriteLine( "FormattedCell -> StoreRenderInfos: {0}", fri );
                 }
             }
 #endif

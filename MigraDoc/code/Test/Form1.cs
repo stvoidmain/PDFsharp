@@ -19,7 +19,7 @@ namespace Test
         {
             InitializeComponent();
             var doc = new Document();
-            doc.DefaultPageSetup.PageFormat = PageFormat.A6;
+            doc.DefaultPageSetup.PageFormat = PageFormat.A4;
             var s = doc.AddSection();
             var t = s.AddTable();
             t.Borders.Width = "1pt";
@@ -34,7 +34,7 @@ namespace Test
             t2.Borders.Width = "0.5pt";
             t2.Borders.Color = Colors.Blue;
             t2.AddColumn( w - 8 );
-            for ( int i = 0; i < 70; i++ )
+            for ( int i = 0; i < 30; i++ )
             {
                 t2.AddRow();
                 t2[ i, 0 ].AddParagraph( "Celda " + i );
@@ -50,7 +50,7 @@ namespace Test
             t3.Borders.Width = "0.5pt";
             t3.Borders.Color = Colors.Green;
             t3.AddColumn( w - 8 );
-            for ( int i = 0; i < 50; i++ )
+            for ( int i = 0; i < 70; i++ )
             {
                 t3.AddRow();
                 t3[ i, 0 ].AddParagraph( "Celda2 " + i );
@@ -60,10 +60,11 @@ namespace Test
                 }
             }
 
-            var t4 = t3[ 49, 0 ].Elements.AddTable();
+            var t4 = t3[ 19, 0 ].Elements.AddTable();
             t4.Borders.Width = "0.5pt";
             t4.Borders.Color = Colors.Yellow;
-            t4.AddColumn( w - 16 );
+            t4.AddColumn( ( w - 16 ) / 2 );
+            t4.AddColumn( ( w - 16 ) / 2 );
             for ( int i = 0; i < 50; i++ )
             {
                 t4.AddRow();
@@ -72,17 +73,24 @@ namespace Test
                 {
                     t4[ i, 0 ].AddParagraph( "Celda3 (2)" + i );
                 }
+
+                t4[ i, 1 ].AddParagraph( "Celda3 " + i );
+                while ( rnd.Next( 2 ) > 0 )
+                {
+                    t4[ i, 1 ].AddParagraph( "Celda3 (2)" + i );
+                }
             }
 
+            doc = DdlReader.DocumentFromFile( @"C:\Users\Jero\Documents\DDL\ddl.txt" );
             var renderer = new PdfDocumentRenderer( true, PdfSharp.Pdf.PdfFontEmbedding.Automatic )
             {
                 Document = doc,
                 WorkingDirectory = Environment.CurrentDirectory
             };
             renderer.RenderDocument();
-            //documentPreview1.Document = doc;
-            var ddl = DdlWriter.WriteToString( doc );
-            documentPreview1.Ddl = ddl;
+            documentPreview1.Document = doc;
+            //var ddl = DdlWriter.WriteToString( doc );
+            //documentPreview1.Ddl = ddl;
             renderer.Save( "test.pdf" );
         }
 

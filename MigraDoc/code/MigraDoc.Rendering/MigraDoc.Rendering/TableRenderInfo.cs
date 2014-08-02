@@ -55,6 +55,7 @@ namespace MigraDoc.Rendering
         }
         internal override void RemoveEnding()
         {
+            Console.WriteLine( "TableRenderInfo.RemoveEnding" );
             if ( !formatInfo.IsEmpty )
             {
                 if ( formatInfo.startRow > 0 )
