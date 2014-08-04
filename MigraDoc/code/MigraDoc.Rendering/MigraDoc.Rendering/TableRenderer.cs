@@ -356,7 +356,7 @@ namespace MigraDoc.Rendering
             CreateBottomBorderMap();
         }
 
-        private double FormatRowCells( Area constrain, int row, bool overrideDone = false )
+        private double FormatRowCells( Area constrain, int row, bool overrideDone = true )
         {
             var area = new Rectangle( constrain.X, constrain.Y, constrain.Width, constrain.Height );
             foreach ( var cell in mergedCells.GetRowCells( row ) )
@@ -399,6 +399,14 @@ namespace MigraDoc.Rendering
             XUnit startingHeight = 0;
             bool isEmpty = false;
             var proveArea = new Rectangle( area.X, area.Y, area.Width, area.Height );
+            if ( startRow > 0 )
+            {
+                var er = endRow >= startRow ? endRow : table.Rows.Count - 1;
+                for ( int i = startRow; i <= endRow; i++ )
+                {
+                    probeHeight += FormatRowCells( proveArea, probeRow, previousFormatInfo != null );
+                }
+            }
 
             while ( probeRow < table.Rows.Count )
             {
@@ -407,32 +415,37 @@ namespace MigraDoc.Rendering
 
                 var anyCellNotDone = formattedCells.Any( fc => fc.Key.Row.Index >= startRow && fc.Key.Row.Index < probeRow && !fc.Value.Done );
 
-                probeHeight = topHeight;
+                //probeHeight = topHeight;
                 var rowHeight = FormatRowCells( proveArea, probeRow, previousFormatInfo != null );
-                probeHeight += rowHeight;
+                CreateBottomBorderMap();
+                //probeHeight += rowHeight;
+                probeHeight = rowHeight + ( XUnit ) bottomBorderMap[ probeRow ] - offset;
+                if ( firstProbe && probeHeight > MaxElementHeight - Tolerance )
+                    probeHeight = MaxElementHeight - Tolerance;
+
                 Console.WriteLine( "Total rows: {0}, Row: {1}, Height: {2}, Total: {3}, Avail: {4}", table.Rows.Count, probeRow, probeHeight, currentHeight, proveArea.Height );
                 var anyCellNotDoneThisRow = formattedCells.Any( fc => fc.Key.Row.Index == probeRow && !fc.Value.Done );
 
                 if ( startingHeight == 0 )
                 {
-                    if ( probeHeight + currentHeight > area.Height && ( anyCellNotDoneThisRow || ( !anyCellNotDone && !anyCellNotDoneThisRow ) ) )
+                    if ( probeHeight > area.Height && ( anyCellNotDoneThisRow || ( !anyCellNotDone && !anyCellNotDoneThisRow ) ) )
                     {
                         isEmpty = true;
                         break;
                     }
                     startingHeight = probeHeight;
                 }
-                if ( probeHeight + currentHeight > area.Height )
+                if ( ( probeHeight.Point /*+ currentHeight.Point */) > area.Height )
                 {
                     break;
                 }
                 else
                 {
                     currRow = probeRow;
-                    currentHeight += probeHeight;
+                    currentHeight = probeHeight;
                     ++probeRow;
                 }
-                proveArea.Height -= probeHeight;
+                proveArea.Height = area.Height - currentHeight;
             }
 
             if ( !isEmpty )

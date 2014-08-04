@@ -81,7 +81,7 @@ namespace Test
                 }
             }
 
-            doc = DdlReader.DocumentFromFile( @"C:\Users\Jero\Documents\DDL\ddl.txt" );
+            //doc = DdlReader.DocumentFromFile( @"C:\Users\Jero\Documents\DDL\ddl.txt" );
             var renderer = new PdfDocumentRenderer( true, PdfSharp.Pdf.PdfFontEmbedding.Automatic )
             {
                 Document = doc,
