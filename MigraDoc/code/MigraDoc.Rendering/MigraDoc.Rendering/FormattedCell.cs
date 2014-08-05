@@ -119,7 +119,7 @@ namespace MigraDoc.Rendering
         private bool isReFormat;
         internal void ReFormat( XGraphics gfx, bool overrideFormat = false )
         {
-            if ( Done /*&& !overrideFormat*/ )
+            if ( Done )
             {
                 renderInfos.Clear();
                 return;
@@ -277,6 +277,11 @@ namespace MigraDoc.Rendering
             }
             //lastRenderInfo = renderInfos != null && renderInfos.Count > 0 ? renderInfos.Last() : null;
             renderInfos.Clear();
+        }
+
+        internal List<RenderInfo> RenderInfos
+        {
+            get { return renderInfos; }
         }
 
         private FieldInfos fieldInfos;

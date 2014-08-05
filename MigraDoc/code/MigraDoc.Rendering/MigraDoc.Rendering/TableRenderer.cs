@@ -275,7 +275,7 @@ namespace MigraDoc.Rendering
                 mergedCells = prevTableFormatInfo.mergedCells;
                 formattedCells = prevTableFormatInfo.formattedCells;
                 startRow = prevTableFormatInfo.endRow + 1;
-                if ( formattedCells.Any( fc => fc.Key.Row.Index < startRow && !fc.Value.Done ) )
+                if ( formattedCells.Any( fc => fc.Key.Row.Index == startRow - 1 && !fc.Value.Done ) )
                 {
                     startRow--;
                 }
@@ -410,8 +410,8 @@ namespace MigraDoc.Rendering
                     CreateBottomBorderMap();
                     probeHeight = rowHeight + ( XUnit ) bottomBorderMap[ probeRow ] - offset;
                 }
-                if ( firstProbe && probeHeight > MaxElementHeight - Tolerance )
-                    probeHeight = MaxElementHeight - Tolerance;
+                //if ( firstProbe && probeHeight > MaxElementHeight - Tolerance )
+                //    probeHeight = MaxElementHeight - Tolerance;
 
                 Console.WriteLine( "Total rows: {0}, Row: {1}, Height: {2}, Total: {3}, Avail: {4}", table.Rows.Count, probeRow, probeHeight, currentHeight, proveArea.Height );
                 var anyCellNotDoneThisRow = formattedCells.Any( fc => fc.Key.Row.Index == probeRow && !fc.Value.Done );

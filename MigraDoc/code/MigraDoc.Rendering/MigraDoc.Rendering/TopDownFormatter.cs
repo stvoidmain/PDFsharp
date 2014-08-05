@@ -197,11 +197,11 @@ namespace MigraDoc.Rendering
                 {
                     if ( renderer.RenderInfo.FormatInfo.IsEmpty && isFirstOnPage )
                     {
-                        //LastPrevRenderInfo = renderer.RenderInfo;
-                        //area = this.areaProvider.GetNextArea();
-                        //if ( area != null )
+                        var h = double.MaxValue;
+                        //It is better not to assume that the render will fit on a page...
+                        if ( docObj.Section != null && docObj.Section.PageSetup != null )
                         {
-                            var h = docObj.Section.PageSetup.PageHeight.Point;
+                            h = docObj.Section.PageSetup.PageHeight.Point;
                             h -= docObj.Section.PageSetup.TopMargin.Point;
                             h -= docObj.Section.PageSetup.BottomMargin.Point;
                             h = Math.Max( 0, h );
@@ -209,42 +209,39 @@ namespace MigraDoc.Rendering
                             {
                                 h = double.MaxValue;
                             }
-                            area = area.Unite( new Rectangle( area.X, area.Y, area.Width, h ) );
-
-                            renderer = Renderer.Create( gfx, this.documentRenderer, docObj, this.areaProvider.AreaFieldInfos );
-                            renderer.MaxElementHeight = area.Height;
-                            renderer.Format( area, prevFormatInfo );
-                            prevFormatInfo = null;
-
-                            //Added KlPo 12.07.07
-                            this.areaProvider.PositionHorizontally( renderer.RenderInfo.LayoutInfo );
-                            this.areaProvider.PositionVertically( renderer.RenderInfo.LayoutInfo );
-                            //Added End
-                            ready = idx == this.elements.Count - 1;
-
-                            LastIndex = idx;
-                            ++idx;
                         }
+                        area = area.Unite( new Rectangle( area.X, area.Y, area.Width, h ) );
+
+                        renderer = Renderer.Create( gfx, this.documentRenderer, docObj, this.areaProvider.AreaFieldInfos );
+                        renderer.MaxElementHeight = area.Height;
+                        renderer.Format( area, prevFormatInfo );
+                        prevFormatInfo = null;
+
+                        //Added KlPo 12.07.07
+                        this.areaProvider.PositionHorizontally( renderer.RenderInfo.LayoutInfo );
+                        this.areaProvider.PositionVertically( renderer.RenderInfo.LayoutInfo );
+                        //Added End
+                        ready = idx == this.elements.Count - 1;
+
+                        LastIndex = idx;
+                        ++idx;
                     }
-                    //if ( area != null )
+                    prevRenderInfo = FinishPage( renderer.RenderInfo, pagebreakBefore, ref renderInfos );
+                    if ( prevRenderInfo != null )
+                        prevFormatInfo = prevRenderInfo.FormatInfo;
+                    else
                     {
-                        prevRenderInfo = FinishPage( renderer.RenderInfo, pagebreakBefore, ref renderInfos );
-                        if ( prevRenderInfo != null )
-                            prevFormatInfo = prevRenderInfo.FormatInfo;
-                        else
-                        {
-                            prevFormatInfo = null;
-                        }
-                        isFirstOnPage = true;
-                        prevBottomMargin = 0;
+                        prevFormatInfo = null;
+                    }
+                    isFirstOnPage = true;
+                    prevBottomMargin = 0;
 
-                        if ( !ready )  //!!!newTHHO 19.01.2007: korrekt? oder GetNextArea immer ausführen???
+                    if ( !ready )  //!!!newTHHO 19.01.2007: korrekt? oder GetNextArea immer ausführen???
+                    {
+                        area = this.areaProvider.GetNextArea();
+                        if ( area != null )
                         {
-                            area = this.areaProvider.GetNextArea();
-                            if ( area != null )
-                            {
-                                maxHeight = area.Height;
-                            }
+                            maxHeight = area.Height;
                         }
                     }
                 }
