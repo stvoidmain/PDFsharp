@@ -72,6 +72,7 @@ namespace MigraDoc.Rendering
         Area IAreaProvider.GetNextArea()
         {
             var rect = CalcContentRect();
+            //Console.WriteLine( "FormattedCell->IAreaProvider.GetNextArea() - idFirstArea: {0}, isReFormat: {1}, Area: {2}", isFirstArea, isReFormat, rect );
             if ( isFirstArea )
             {
                 isFirstArea = false;
@@ -80,23 +81,17 @@ namespace MigraDoc.Rendering
             else if ( isReFormat )
             {
                 isReFormat = false;
-                return rect;
+                if ( rect.Height - CalcContentHeight( documentRenderer ) > 0 )
+                {
+                    return rect;
+                }
             }
             return null;
         }
 
         Area IAreaProvider.ProbeNextArea()
         {
-            //if ( renderInfos.Count > 0 )
-            //{
-            //    var ch = CalcContentHeight( documentRenderer );
-            //    var low = Constrain.Lower( ch );
-            //    if ( low.Height > 0 )
-            //    {
-            //        return new Rectangle( xOffset, yOffset, 0, low.Height );
-            //    }
-            //}
-            return null;// new Rectangle( xOffset, yOffset, 0, Constrain.Height );
+            return null;
         }
 
         private int lastIndex;
@@ -108,65 +103,31 @@ namespace MigraDoc.Rendering
             formatter = new TopDownFormatter( this, documentRenderer, cell.Elements );
             formatter.FormatOnAreas( gfx, false, lastIndex, lastRenderInfo );
             contentHeight = CalcContentHeight( documentRenderer );
-            Done = formatter.LastIndex >= cell.Elements.Count && formatter.LastPrevRenderInfo == null && contentHeight < Constrain.Height;
-            lastIndex = formatter.LastIndex;
-            lastRenderInfo = formatter.LastPrevRenderInfo;
+            Done = isRe && formatter.LastIndex >= cell.Elements.Count && formatter.LastPrevRenderInfo == null && contentHeight < Constrain.Height;
             if ( !isRe )
             {
                 lastIndex = 0;
                 lastRenderInfo = null;
-                //renderInfos.Clear();
             }
-        }
-
-        private FormatInfo LastFormatInfo
-        {
-            get
+            else
             {
-                return lastRenderInfo != null ? lastRenderInfo.FormatInfo : null;
+                lastIndex = formatter.LastIndex;
+                lastRenderInfo = formatter.LastPrevRenderInfo;
             }
         }
 
         private bool isReFormat;
         internal void ReFormat( XGraphics gfx, bool overrideFormat = false )
         {
-            if ( Done && !overrideFormat )
+            if ( Done /*&& !overrideFormat*/ )
             {
+                renderInfos.Clear();
                 return;
             }
             if ( lastIndex > 0 && lastIndex == cell.Elements.Count )
             {
                 lastIndex--;
             }
-            //var obByIndex = cell.Elements[ lastIndex ];
-            //if ( lastRenderInfo != null )
-            //{
-            //    if ( lastRenderInfo.DocumentObject != obByIndex )
-            //    {
-            //        lastRenderInfo = null;
-            //        foreach ( var ri in renderInfos )
-            //        {
-            //            if ( ri.DocumentObject == obByIndex )
-            //            {
-            //                lastRenderInfo = ri;
-            //            }
-            //        }
-            //    }
-            //}
-            //else
-            //{
-            //    foreach ( var ri in renderInfos )
-            //    {
-            //        if ( ri.DocumentObject == obByIndex && !ri.FormatInfo.IsComplete )
-            //        {
-            //            lastRenderInfo = ri;
-            //        }
-            //    }
-            //}
-            //if ( lastRenderInfo != null && ( lastRenderInfo.FormatInfo.IsComplete || lastRenderInfo.FormatInfo.IsEmpty ) )
-            //{
-            //    lastRenderInfo = null;
-            //}
             renderInfos = new List<RenderInfo>();
             isReFormat = true;
             Format( gfx );
@@ -181,7 +142,6 @@ namespace MigraDoc.Rendering
             Column rightColumn = cell.Table.Columns[ column.Index + cell.MergeRight ];
             width -= rightColumn.RightPadding.Point;
 
-            XUnit height = double.MaxValue;// isFirstArea ? Constrain.Height.Point : double.MaxValue;
             return new Rectangle( xOffset, yOffset, width, Constrain.Height.Point );
         }
 

@@ -83,6 +83,7 @@ namespace MigraDoc.Rendering
             connectedRowsMap = formatInfo.connectedRowsMap;
             formattedCells = formatInfo.formattedCells;
             cellRenderInfos = formatInfo.cellRenderInfos;
+            allCellRenderInfos = formatInfo.allCellRenderInfos;
 
             currRow = formatInfo.startRow;
             startRow = formatInfo.startRow;
@@ -153,7 +154,7 @@ namespace MigraDoc.Rendering
         void RenderContent( Cell cell, Rectangle innerRect )
         {
             FormattedCell formattedCell = formattedCells[ cell ];
-            RenderInfo[] renderInfos = cellRenderInfos.ContainsKey( cell ) ? cellRenderInfos[ cell ].ToArray() : formattedCell.GetRenderInfos();//
+            var renderInfos = cellRenderInfos.ContainsKey( cell ) ? cellRenderInfos[ cell ].ToArray() : formattedCell.GetRenderInfos();
 
             if ( renderInfos == null )
                 return;
@@ -277,20 +278,15 @@ namespace MigraDoc.Rendering
                 if ( formattedCells.Any( fc => fc.Key.Row.Index < startRow && !fc.Value.Done ) )
                 {
                     startRow--;
-                    //FormatCells( area, true );
                 }
-                else
-                {
-                    //FormatCells( area, true );
-                }
-                //cellRenderInfos = prevTableFormatInfo.cellRenderInfos;
+                allCellRenderInfos = prevTableFormatInfo.allCellRenderInfos;
                 bottomBorderMap = prevTableFormatInfo.bottomBorderMap;
                 lastHeaderRow = prevTableFormatInfo.lastHeaderRow;
                 connectedRowsMap = prevTableFormatInfo.connectedRowsMap;
             }
             else
             {
-                //cellRenderInfos = new Dictionary<Cell, IEnumerable<RenderInfo>>();
+                allCellRenderInfos = new Dictionary<Cell, IEnumerable<RenderInfo>>();
                 mergedCells = new MergedCellList( table );
                 FormatCells( area );
                 CalcLastHeaderRow();
@@ -306,6 +302,7 @@ namespace MigraDoc.Rendering
             ( ( TableFormatInfo ) tblRenderInfo.FormatInfo ).mergedCells = mergedCells;
             ( ( TableFormatInfo ) tblRenderInfo.FormatInfo ).formattedCells = formattedCells;
             ( ( TableFormatInfo ) tblRenderInfo.FormatInfo ).cellRenderInfos = cellRenderInfos;
+            ( ( TableFormatInfo ) tblRenderInfo.FormatInfo ).allCellRenderInfos = allCellRenderInfos;
             ( ( TableFormatInfo ) tblRenderInfo.FormatInfo ).bottomBorderMap = bottomBorderMap;
             ( ( TableFormatInfo ) tblRenderInfo.FormatInfo ).connectedRowsMap = connectedRowsMap;
             ( ( TableFormatInfo ) tblRenderInfo.FormatInfo ).lastHeaderRow = lastHeaderRow;
@@ -399,14 +396,6 @@ namespace MigraDoc.Rendering
             XUnit startingHeight = 0;
             bool isEmpty = false;
             var proveArea = new Rectangle( area.X, area.Y, area.Width, area.Height );
-            if ( startRow > 0 )
-            {
-                var er = endRow >= startRow ? endRow : table.Rows.Count - 1;
-                for ( int i = startRow; i <= endRow; i++ )
-                {
-                    probeHeight += FormatRowCells( proveArea, probeRow, previousFormatInfo != null );
-                }
-            }
 
             while ( probeRow < table.Rows.Count )
             {
@@ -414,12 +403,13 @@ namespace MigraDoc.Rendering
                 probeRow = ( int ) connectedRowsMap[ probeRow ];
 
                 var anyCellNotDone = formattedCells.Any( fc => fc.Key.Row.Index >= startRow && fc.Key.Row.Index < probeRow && !fc.Value.Done );
-
-                //probeHeight = topHeight;
-                var rowHeight = FormatRowCells( proveArea, probeRow, previousFormatInfo != null );
-                CreateBottomBorderMap();
-                //probeHeight += rowHeight;
-                probeHeight = rowHeight + ( XUnit ) bottomBorderMap[ probeRow ] - offset;
+                //probeHeight = ( XUnit ) bottomBorderMap[ probeRow + 1 ] - offset;
+                //if ( probeHeight > area.Height )
+                {
+                    var rowHeight = FormatRowCells( proveArea, probeRow, previousFormatInfo != null );
+                    CreateBottomBorderMap();
+                    probeHeight = rowHeight + ( XUnit ) bottomBorderMap[ probeRow ] - offset;
+                }
                 if ( firstProbe && probeHeight > MaxElementHeight - Tolerance )
                     probeHeight = MaxElementHeight - Tolerance;
 
@@ -428,14 +418,14 @@ namespace MigraDoc.Rendering
 
                 if ( startingHeight == 0 )
                 {
-                    if ( probeHeight > area.Height && ( anyCellNotDoneThisRow || ( !anyCellNotDone && !anyCellNotDoneThisRow ) ) )
+                    if ( probeHeight > area.Height/* && ( anyCellNotDoneThisRow || ( !anyCellNotDone && !anyCellNotDoneThisRow ) )*/ )
                     {
                         isEmpty = true;
                         break;
                     }
                     startingHeight = probeHeight;
                 }
-                if ( ( probeHeight.Point /*+ currentHeight.Point */) > area.Height )
+                if ( probeHeight > area.Height )
                 {
                     break;
                 }
@@ -471,7 +461,7 @@ namespace MigraDoc.Rendering
         /// </summary>
         /// <param name="area">The area on which to fit the table.</param>
         /// <param name="previousFormatInfo"></param>
-        void Format2( Area area, FormatInfo previousFormatInfo )
+        void OldFormat( Area area, FormatInfo previousFormatInfo )
         {
             DocumentElements elements = DocumentRelations.GetParent( table ) as DocumentElements;
             if ( elements != null )
@@ -594,21 +584,19 @@ namespace MigraDoc.Rendering
             }
             layoutInfo.MinWidth = layoutInfo.ContentArea.Width;
 
-            //if ( startRow >= 0 && endRow >= 0 )
+            foreach ( var cell in formattedCells.Where( fc => fc.Key.Row.Index >= formatInfo.startRow && fc.Key.Row.Index <= formatInfo.endRow ) )
             {
-                foreach ( var cell in formattedCells.Where( fc => fc.Key.Row.Index >= formatInfo.startRow && fc.Key.Row.Index <= formatInfo.endRow ) )
+                var infos = cell.Value.GetRenderInfos();
+                if ( ( ( TableFormatInfo ) renderInfo.FormatInfo ).allCellRenderInfos.ContainsKey( cell.Key ) )
                 {
-                    ( ( TableFormatInfo ) renderInfo.FormatInfo ).cellRenderInfos[ cell.Key ] = cell.Value.GetRenderInfos();
-                    //if ( ( ( TableFormatInfo ) renderInfo.FormatInfo ).cellRenderInfos.ContainsKey( cell.Key ) )
-                    //{
-                    //    var existing = ( ( TableFormatInfo ) renderInfo.FormatInfo ).cellRenderInfos[ cell.Key ].ToList();
-                    //    existing.AddRange( cell.Value.GetRenderInfos() );
-                    //    ( ( TableFormatInfo ) renderInfo.FormatInfo ).cellRenderInfos[ cell.Key ] = existing.ToArray();
-                    //}
-                    //else
-                    //{
-                    //    ( ( TableFormatInfo ) renderInfo.FormatInfo ).cellRenderInfos[ cell.Key ] = cell.Value.GetRenderInfos();
-                    //}
+                    var existing = ( ( TableFormatInfo ) renderInfo.FormatInfo ).allCellRenderInfos[ cell.Key ].ToList();
+                    existing.AddRange( infos );
+                    ( ( TableFormatInfo ) renderInfo.FormatInfo ).allCellRenderInfos[ cell.Key ] = existing.Distinct().ToArray();
+                }
+                else
+                {
+                    ( ( TableFormatInfo ) renderInfo.FormatInfo ).cellRenderInfos[ cell.Key ] = infos;
+                    ( ( TableFormatInfo ) renderInfo.FormatInfo ).allCellRenderInfos[ cell.Key ] = infos;
                 }
             }
 
@@ -877,6 +865,7 @@ namespace MigraDoc.Rendering
         MergedCellList mergedCells;
         internal Dictionary<Cell, FormattedCell> formattedCells;
         internal Dictionary<Cell, IEnumerable<RenderInfo>> cellRenderInfos;
+        private Dictionary<Cell, IEnumerable<RenderInfo>> allCellRenderInfos;
         SortedList bottomBorderMap;
         SortedList connectedRowsMap;
         SortedList connectedColumnsMap;
