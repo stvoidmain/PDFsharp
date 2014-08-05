@@ -1,3 +1,5 @@
+[![Build status](https://ci.appveyor.com/api/projects/status/8ihec6v2kcuy396f/branch/master)](https://ci.appveyor.com/project/stvoidmain/pdfsharp/branch/master)
+
 This is a forked version of PdfSharp and Migradoc in an attempt to add some missing functionality.
 
 - Tables row splitting (most needed on nested tables) * Done
