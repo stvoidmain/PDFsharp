@@ -70,6 +70,8 @@ namespace MigraDoc.Rendering
         /// </summary>
         /// <param name="gfx">The graphics object to render on.</param>
         /// <param name="topLevel">if set to <c>true</c> formats the object is on top level.</param>
+        /// <param name="startIndex">The index to start on the elements collection.</param>
+        /// <param name="rInfo">The RenderInfo to be used a a parameter for the newly created Renderer.</param>
         public void FormatOnAreas( XGraphics gfx, bool topLevel, int startIndex = 0, RenderInfo rInfo = null )
         {
             Area area = this.areaProvider.GetNextArea();
