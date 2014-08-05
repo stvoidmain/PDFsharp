@@ -53,11 +53,29 @@ namespace Test
             for ( int i = 0; i < 70; i++ )
             {
                 t3.AddRow();
-                t3[ i, 0 ].AddParagraph( "Celda2 " + i );
+                var text = "Celda2 " + i;
+                var p = t3[ i, 0 ].AddParagraph( "Celda2 " + i );
+                p.Format.WidowControl = true;
                 while ( rnd.Next( 2 ) > 0 )
                 {
-                    t3[ i, 0 ].AddParagraph( "Celda2 (2)" + i );
+                    text += Environment.NewLine;
+                    text += "Celda2 (2) " + i;
+                    //p.AddLineBreak();
+                    //p.AddFormattedText( "Celda2 (2) " + i, TextFormat.Bold );
                 }
+                if ( i == 7 )
+                {
+                    text += Environment.NewLine;
+                    text += " More text to make split, it is going to split or is it not?";// I don't know but i gonna make sure it does!";
+                    //text += Environment.NewLine;
+                    text += "\nSplitted?";
+                }
+                if ( i == 34 )
+                {
+                    //p = t3[ i, 0 ].AddParagraph( "Celda2 (long) " + i );
+                    //p.AddText( " A very, very long text to make the cell split the paragraph in it." );
+                }
+                p.AddText( text.Replace( " ", "­ ­" ) );
             }
 
             var t4 = t3[ 19, 0 ].Elements.AddTable();
@@ -81,7 +99,6 @@ namespace Test
                 }
             }
 
-            //doc = DdlReader.DocumentFromFile( @"C:\Users\Jero\Documents\DDL\ddl.txt" );
             var renderer = new PdfDocumentRenderer( true, PdfSharp.Pdf.PdfFontEmbedding.Automatic )
             {
                 Document = doc,
@@ -89,8 +106,6 @@ namespace Test
             };
             renderer.RenderDocument();
             documentPreview1.Document = doc;
-            //var ddl = DdlWriter.WriteToString( doc );
-            //documentPreview1.Ddl = ddl;
             renderer.Save( "test.pdf" );
         }
 

@@ -308,13 +308,8 @@ namespace MigraDoc.Rendering
             ( ( TableFormatInfo ) tblRenderInfo.FormatInfo ).lastHeaderRow = lastHeaderRow;
         }
 
-        void FormatCells( Area constrain, bool reFormat = false )
+        void FormatCells( Area constrain )
         {
-            if ( reFormat )
-            {
-                ReFormatCells( constrain );
-                return;
-            }
             formattedCells = new Dictionary<Cell, FormattedCell>();
             var area = new Rectangle( constrain.X, constrain.Y, constrain.Width, constrain.Height );
             foreach ( Cell cell in mergedCells.GetCells() )
@@ -326,31 +321,6 @@ namespace MigraDoc.Rendering
                 formattedCell.Format( gfx );
                 formattedCells.Add( cell, formattedCell );
             }
-        }
-
-        void ReFormatCells( Area constrain )
-        {
-            return;
-            var area = new Rectangle( constrain.X, constrain.Y, constrain.Width, constrain.Height );
-            var cells = mergedCells.GetCells();
-            for ( int i = startRow; i <= ( endRow >= 0 ? endRow : table.Rows.Count - 1 ); i++ )
-            {
-                foreach ( var cell in cells.Where( c => c.Row.Index == i ) )
-                {
-                    if ( !formattedCells[ cell ].Done )
-                    {
-                        formattedCells[ cell ].Constrain = area;
-                        formattedCells[ cell ].ReFormat( gfx );
-                    }
-                }
-                var maxRowHeight = formattedCells.Where( fc => fc.Key.Row.Index == i ).Max( fc => fc.Value.InnerHeight.Point );
-                area = ( Rectangle ) area.Lower( maxRowHeight );
-                if ( area.Height <= 0 )
-                {
-                    break;
-                }
-            }
-            CreateBottomBorderMap();
         }
 
         private double FormatRowCells( Area constrain, int row, bool overrideDone = true )
@@ -379,7 +349,6 @@ namespace MigraDoc.Rendering
 
             renderInfo = new TableRenderInfo();
             InitFormat( area, previousFormatInfo );
-            Console.WriteLine( "Starting format - Area: {0}, Pfi: {1}", area, previousFormatInfo );
 
             // Don't take any Rows higher then MaxElementHeight
             XUnit topHeight = CalcStartingHeight();
@@ -403,22 +372,19 @@ namespace MigraDoc.Rendering
                 probeRow = ( int ) connectedRowsMap[ probeRow ];
 
                 var anyCellNotDone = formattedCells.Any( fc => fc.Key.Row.Index >= startRow && fc.Key.Row.Index < probeRow && !fc.Value.Done );
-                //probeHeight = ( XUnit ) bottomBorderMap[ probeRow + 1 ] - offset;
-                //if ( probeHeight > area.Height )
-                {
-                    var rowHeight = FormatRowCells( proveArea, probeRow, previousFormatInfo != null );
-                    CreateBottomBorderMap();
-                    probeHeight = rowHeight + ( XUnit ) bottomBorderMap[ probeRow ] - offset;
-                }
+                var rowHeight = FormatRowCells( proveArea, probeRow, previousFormatInfo != null );
+                CreateBottomBorderMap();
+                probeHeight = rowHeight + ( XUnit ) bottomBorderMap[ probeRow ] - offset;
+
+                //TODO: This would need some thinking...
                 //if ( firstProbe && probeHeight > MaxElementHeight - Tolerance )
                 //    probeHeight = MaxElementHeight - Tolerance;
 
-                Console.WriteLine( "Total rows: {0}, Row: {1}, Height: {2}, Total: {3}, Avail: {4}", table.Rows.Count, probeRow, probeHeight, currentHeight, proveArea.Height );
                 var anyCellNotDoneThisRow = formattedCells.Any( fc => fc.Key.Row.Index == probeRow && !fc.Value.Done );
 
                 if ( startingHeight == 0 )
                 {
-                    if ( probeHeight > area.Height/* && ( anyCellNotDoneThisRow || ( !anyCellNotDone && !anyCellNotDoneThisRow ) )*/ )
+                    if ( probeHeight > area.Height && ( anyCellNotDoneThisRow || ( !anyCellNotDone && !anyCellNotDoneThisRow ) ) )
                     {
                         isEmpty = true;
                         break;
@@ -587,17 +553,18 @@ namespace MigraDoc.Rendering
             foreach ( var cell in formattedCells.Where( fc => fc.Key.Row.Index >= formatInfo.startRow && fc.Key.Row.Index <= formatInfo.endRow ) )
             {
                 var infos = cell.Value.GetRenderInfos();
-                if ( ( ( TableFormatInfo ) renderInfo.FormatInfo ).allCellRenderInfos.ContainsKey( cell.Key ) )
-                {
-                    var existing = ( ( TableFormatInfo ) renderInfo.FormatInfo ).allCellRenderInfos[ cell.Key ].ToList();
-                    existing.AddRange( infos );
-                    ( ( TableFormatInfo ) renderInfo.FormatInfo ).allCellRenderInfos[ cell.Key ] = existing.Distinct().ToArray();
-                }
-                else
-                {
+                //if ( ( ( TableFormatInfo ) renderInfo.FormatInfo ).allCellRenderInfos.ContainsKey( cell.Key ) )
+                //{
+                //    var existing = ( ( TableFormatInfo ) renderInfo.FormatInfo ).allCellRenderInfos[ cell.Key ].ToList();
+                //    existing.AddRange( infos );
+                //    ( ( TableFormatInfo ) renderInfo.FormatInfo ).allCellRenderInfos[ cell.Key ] = existing.Distinct().ToArray();
+                //}
+                //else
+                //{
+                //    ( ( TableFormatInfo ) renderInfo.FormatInfo ).cellRenderInfos[ cell.Key ] = infos;
+                //    ( ( TableFormatInfo ) renderInfo.FormatInfo ).allCellRenderInfos[ cell.Key ] = infos;
+                //}
                     ( ( TableFormatInfo ) renderInfo.FormatInfo ).cellRenderInfos[ cell.Key ] = infos;
-                    ( ( TableFormatInfo ) renderInfo.FormatInfo ).allCellRenderInfos[ cell.Key ] = infos;
-                }
             }
 
             if ( !table.Rows.LeftIndent.IsEmpty )
