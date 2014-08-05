@@ -103,7 +103,6 @@ namespace MigraDoc.Rendering
         internal int lastHeaderRow = -1;
         internal Dictionary<Cell, FormattedCell> formattedCells;
         internal Dictionary<Cell, IEnumerable<RenderInfo>> cellRenderInfos;
-        internal Dictionary<Cell, IEnumerable<RenderInfo>> allCellRenderInfos;
         internal MergedCellList mergedCells;
         internal SortedList bottomBorderMap;
         internal SortedList connectedRowsMap;

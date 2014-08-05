@@ -362,7 +362,7 @@
   <PropertyGroup>
     <PreBuildEvent>
     </PreBuildEvent>
-    <PostBuildEvent>copy $(TargetPath) D:\Proyectos\Git\administracionglobal\AdministracionGlobalWeb\bin\ /Y
-copy $(TargetPath) D:\Proyectos\Git\administracionglobal\Dependencias\PDFSharp\ /Y</PostBuildEvent>
+    <PostBuildEvent>
+    </PostBuildEvent>
   </PropertyGroup>
 </Project>

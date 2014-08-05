@@ -83,7 +83,6 @@ namespace MigraDoc.Rendering
             connectedRowsMap = formatInfo.connectedRowsMap;
             formattedCells = formatInfo.formattedCells;
             cellRenderInfos = formatInfo.cellRenderInfos;
-            allCellRenderInfos = formatInfo.allCellRenderInfos;
 
             currRow = formatInfo.startRow;
             startRow = formatInfo.startRow;
@@ -279,14 +278,12 @@ namespace MigraDoc.Rendering
                 {
                     startRow--;
                 }
-                allCellRenderInfos = prevTableFormatInfo.allCellRenderInfos;
                 bottomBorderMap = prevTableFormatInfo.bottomBorderMap;
                 lastHeaderRow = prevTableFormatInfo.lastHeaderRow;
                 connectedRowsMap = prevTableFormatInfo.connectedRowsMap;
             }
             else
             {
-                allCellRenderInfos = new Dictionary<Cell, IEnumerable<RenderInfo>>();
                 mergedCells = new MergedCellList( table );
                 FormatCells( area );
                 CalcLastHeaderRow();
@@ -302,7 +299,6 @@ namespace MigraDoc.Rendering
             ( ( TableFormatInfo ) tblRenderInfo.FormatInfo ).mergedCells = mergedCells;
             ( ( TableFormatInfo ) tblRenderInfo.FormatInfo ).formattedCells = formattedCells;
             ( ( TableFormatInfo ) tblRenderInfo.FormatInfo ).cellRenderInfos = cellRenderInfos;
-            ( ( TableFormatInfo ) tblRenderInfo.FormatInfo ).allCellRenderInfos = allCellRenderInfos;
             ( ( TableFormatInfo ) tblRenderInfo.FormatInfo ).bottomBorderMap = bottomBorderMap;
             ( ( TableFormatInfo ) tblRenderInfo.FormatInfo ).connectedRowsMap = connectedRowsMap;
             ( ( TableFormatInfo ) tblRenderInfo.FormatInfo ).lastHeaderRow = lastHeaderRow;
@@ -553,18 +549,7 @@ namespace MigraDoc.Rendering
             foreach ( var cell in formattedCells.Where( fc => fc.Key.Row.Index >= formatInfo.startRow && fc.Key.Row.Index <= formatInfo.endRow ) )
             {
                 var infos = cell.Value.GetRenderInfos();
-                //if ( ( ( TableFormatInfo ) renderInfo.FormatInfo ).allCellRenderInfos.ContainsKey( cell.Key ) )
-                //{
-                //    var existing = ( ( TableFormatInfo ) renderInfo.FormatInfo ).allCellRenderInfos[ cell.Key ].ToList();
-                //    existing.AddRange( infos );
-                //    ( ( TableFormatInfo ) renderInfo.FormatInfo ).allCellRenderInfos[ cell.Key ] = existing.Distinct().ToArray();
-                //}
-                //else
-                //{
-                //    ( ( TableFormatInfo ) renderInfo.FormatInfo ).cellRenderInfos[ cell.Key ] = infos;
-                //    ( ( TableFormatInfo ) renderInfo.FormatInfo ).allCellRenderInfos[ cell.Key ] = infos;
-                //}
-                    ( ( TableFormatInfo ) renderInfo.FormatInfo ).cellRenderInfos[ cell.Key ] = infos;
+                ( ( TableFormatInfo ) renderInfo.FormatInfo ).cellRenderInfos[ cell.Key ] = infos;
             }
 
             if ( !table.Rows.LeftIndent.IsEmpty )
@@ -832,7 +817,6 @@ namespace MigraDoc.Rendering
         MergedCellList mergedCells;
         internal Dictionary<Cell, FormattedCell> formattedCells;
         internal Dictionary<Cell, IEnumerable<RenderInfo>> cellRenderInfos;
-        private Dictionary<Cell, IEnumerable<RenderInfo>> allCellRenderInfos;
         SortedList bottomBorderMap;
         SortedList connectedRowsMap;
         SortedList connectedColumnsMap;
